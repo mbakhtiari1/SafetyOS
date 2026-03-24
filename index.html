@@ -1,0 +1,2849 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Safety OS — TG-100 Practical Guide Demo</title>
+<style>
+:root{
+  --navy:#0f2540;--navy-md:#1e3a5f;--blue:#2471a3;--blue-lt:#ebf5fb;
+  --teal:#148f77;--teal-lt:#e8f8f5;--amber:#d68910;--amber-lt:#fef9e7;
+  --red:#c0392b;--red-lt:#fdedec;--green:#1e8449;--green-lt:#d5f5e3;
+  --purple:#6a1b9a;--purple-lt:#ede7f6;
+  --bg:#f0f4f8;--card:#ffffff;--border:#dde3ea;--text:#1a2535;--muted:#6b7c93;
+  --font:'Segoe UI','Helvetica Neue',Arial,sans-serif;
+}
+*,*::before,*::after{box-sizing:border-box;}
+body{font-family:var(--font);margin:0;background:var(--bg);color:var(--text);
+  height:100vh;display:flex;flex-direction:column;font-size:13px;overflow:hidden;}
+
+/* SYNC */
+#sync-overlay{position:fixed;inset:0;background:rgba(10,20,40,.88);display:flex;
+  align-items:center;justify-content:center;z-index:9999;backdrop-filter:blur(5px);}
+.sync-box{background:#fff;border-radius:16px;padding:46px 52px;max-width:500px;width:93%;
+  text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.36);}
+.sync-logo{font-size:42px;margin-bottom:8px;}
+.sync-box h2{margin:0;font-size:1.7em;color:var(--navy);letter-spacing:-.5px;}
+.sync-box h2 span{color:var(--blue);}
+.sync-box p{color:var(--muted);margin:10px 0 30px;line-height:1.65;font-size:13px;}
+.sync-btns{display:flex;gap:14px;justify-content:center;}
+.sync-btns button{padding:12px 26px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:all .15s;}
+.btn-load{background:#fff;color:var(--blue);border:2px solid var(--blue);}
+.btn-load:hover{background:var(--blue-lt);}
+.btn-fresh{background:var(--navy);color:#fff;border:2px solid var(--navy);}
+.btn-fresh:hover{background:var(--navy-md);}
+.sync-note{font-size:11px;color:#bbb;margin-top:20px;}
+
+/* NAV */
+nav{background:var(--navy);padding:0 20px;display:flex;align-items:center;
+  gap:2px;flex-shrink:0;box-shadow:0 2px 12px rgba(0,0,0,.28);}
+.nav-brand{font-size:12px;font-weight:700;letter-spacing:2.5px;color:#fff;
+  margin-right:20px;padding:14px 0;white-space:nowrap;}
+.nav-brand span{color:#5dade2;}
+.tab-btn{background:none;border:none;color:rgba(255,255,255,.55);padding:14px 12px;
+  cursor:pointer;font-size:12px;font-weight:500;border-bottom:3px solid transparent;
+  transition:all .15s;white-space:nowrap;}
+.tab-btn:hover{color:#fff;}
+.tab-btn.active{color:#fff;border-bottom-color:#5dade2;}
+
+/* TOOLBAR */
+.toolbar{background:#fff;border-bottom:1px solid var(--border);padding:5px 20px;
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;font-size:12px;}
+.tb-left{display:flex;align-items:center;gap:8px;color:var(--muted);}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--teal);display:inline-block;}
+.tb-right{display:flex;gap:7px;align-items:center;}
+#db-count{font-size:11px;color:#aaa;margin-right:4px;}
+.btn-xs{padding:5px 12px;border-radius:5px;font-size:11.5px;font-weight:600;
+  cursor:pointer;border:1px solid var(--border);background:#fff;color:var(--text);transition:all .12s;}
+.btn-xs:hover{background:var(--bg);}
+.btn-xs.blue{background:var(--blue);color:#fff;border-color:var(--blue);}
+.btn-xs.blue:hover{background:#1a5f8a;}
+.btn-xs.green{background:var(--teal);color:#fff;border-color:var(--teal);}
+.btn-xs.green:hover{background:#117a65;}
+.btn-xs.amber{background:#b45309;color:#fff;border-color:#b45309;}
+.btn-xs.amber:hover{background:#92400e;}
+
+/* LAYOUT */
+.main{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;}
+.tab-content{display:none;flex:1;min-height:0;flex-direction:column;}
+.tab-content.active{display:flex;}
+.split{display:flex;flex:1;min-height:0;overflow:hidden;}
+.split-side{width:268px;min-width:268px;background:#fff;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;}
+.split-side-hd{padding:10px 14px;background:#f8fafc;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;font-weight:700;
+  font-size:11px;color:var(--navy);flex-shrink:0;text-transform:uppercase;letter-spacing:.6px;}
+.split-side-list{flex:1;overflow-y:auto;}
+.split-main{flex:1;overflow-y:auto;padding:20px;background:var(--bg);}
+
+/* CARDS */
+.card{background:var(--card);border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.07);
+  padding:20px;margin-bottom:16px;border:1px solid var(--border);}
+.card:last-child{margin-bottom:0;}
+.card-hd{display:flex;justify-content:space-between;align-items:flex-start;
+  margin-bottom:16px;padding-bottom:12px;border-bottom:1px solid var(--border);}
+.card-title{margin:0;font-size:13.5px;font-weight:700;color:var(--navy);}
+.card-sub{font-size:11px;color:var(--muted);margin-top:2px;}
+
+/* LIST ITEMS */
+.list-item{padding:11px 14px;border-bottom:1px solid #f0f3f6;cursor:pointer;transition:background .12s;}
+.list-item:hover{background:#f8fafc;}
+.list-item.sel{background:var(--blue-lt);border-left:3px solid var(--blue);}
+.li-title{font-weight:600;font-size:12.5px;margin:0 0 2px;}
+.li-sub{font-size:11px;color:var(--muted);}
+.li-meta{margin-top:5px;display:flex;gap:5px;flex-wrap:wrap;}
+.empty-st{text-align:center;padding:40px 20px;color:var(--muted);font-size:12px;}
+.empty-st-icon{font-size:32px;margin-bottom:8px;}
+
+/* BADGES */
+.badge{display:inline-block;padding:2px 8px;border-radius:10px;font-size:10.5px;font-weight:600;}
+.bg{background:var(--green-lt);color:var(--green);}
+.by{background:var(--amber-lt);color:var(--amber);}
+.br{background:var(--red-lt);color:var(--red);}
+.bb{background:var(--blue-lt);color:var(--blue);}
+.bm{background:var(--purple-lt);color:var(--purple);}
+.btg{background:var(--purple-lt);color:var(--purple);font-size:9.5px;padding:1px 6px;border-radius:8px;font-weight:700;}
+
+/* FORMS */
+.fg{display:flex;flex-direction:column;gap:4px;margin-bottom:12px;}
+.fg label{font-size:10.5px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;}
+.fg input,.fg select,.fg textarea{padding:7px 10px;border:1px solid var(--border);border-radius:5px;
+  font-size:12.5px;font-family:var(--font);background:#fff;color:var(--text);
+  transition:border-color .12s,box-shadow .12s;}
+.fg input:focus,.fg select:focus,.fg textarea:focus{outline:none;border-color:var(--blue);
+  box-shadow:0 0 0 3px rgba(36,113,163,.1);}
+.fg textarea{resize:vertical;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:0 14px;}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:0 14px;}
+.scale-tip{font-size:10px;color:var(--muted);margin-top:2px;}
+
+/* SECTION BOXES */
+.section-box{border-radius:8px;padding:16px;margin-bottom:16px;}
+.box-5w{background:#f8fafc;border:1px solid #dde3ea;}
+.box-5why{background:#fffdf5;border:1px solid #fde8c8;}
+.box-cast{background:#f5f0ff;border:1px solid #c4b5fd;}
+.box-hd{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px;}
+.box-hd.blue{color:var(--blue);}
+.box-hd.amber{color:var(--amber);}
+.box-hd.purple{color:var(--purple);}
+
+/* CAUSALITY CHECKBOXES */
+.cause-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:6px;}
+.cause-chip{display:flex;flex-direction:column;align-items:center;gap:4px;
+  padding:8px 4px;border-radius:7px;border:2px solid var(--border);cursor:pointer;
+  background:#fff;transition:all .12s;user-select:none;}
+.cause-chip:hover{border-color:#94a3b8;}
+.cause-chip.checked{border-color:currentColor;}
+.cause-chip input[type=checkbox]{display:none;}
+.cause-chip-icon{font-size:18px;line-height:1;}
+.cause-chip-label{font-size:9.5px;font-weight:700;text-align:center;line-height:1.2;}
+.cause-org{color:#2563eb;}  .cause-org.checked{background:#eff6ff;}
+.cause-tech{color:#0891b2;} .cause-tech.checked{background:#ecfeff;}
+.cause-hb{color:#dc2626;}   .cause-hb.checked{background:#fef2f2;}
+.cause-proc{color:#d97706;} .cause-proc.checked{background:#fffbeb;}
+.cause-pt{color:#7c3aed;}   .cause-pt.checked{background:#f5f3ff;}
+
+/* CAUSALITY DISTRIBUTION CHART */
+.cause-dist{padding:12px 14px;background:#f8fafc;border-bottom:1px solid var(--border);}
+.cause-dist-title{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;
+  color:var(--muted);margin-bottom:8px;}
+.cause-bar-row{display:flex;align-items:center;gap:7px;margin-bottom:5px;}
+.cause-bar-label{font-size:9.5px;font-weight:600;width:32px;flex-shrink:0;text-align:right;}
+.cause-bar-wrap{flex:1;background:#e2e8f0;border-radius:3px;height:8px;overflow:hidden;}
+.cause-bar-fill{height:100%;border-radius:3px;transition:width .3s;}
+.cause-bar-val{font-size:9px;font-weight:700;width:22px;flex-shrink:0;color:var(--muted);}
+.halcyon-note{font-size:9px;color:var(--muted);margin-top:8px;line-height:1.4;
+  border-top:1px dashed #e2e8f0;padding-top:7px;}
+.halcyon-note span{font-weight:700;}
+
+/* CAST CONTROLLER TABLE */
+.cast-table{width:100%;border-collapse:collapse;font-size:11.5px;margin-bottom:12px;}
+.cast-table th{background:#e0d7f3;color:var(--purple);padding:7px 9px;text-align:left;
+  font-size:10.5px;font-weight:700;white-space:nowrap;}
+.cast-table td{padding:6px 8px;border-bottom:1px solid #f0ebff;vertical-align:top;}
+.cast-table td:first-child{font-weight:600;font-size:11px;color:var(--purple);white-space:nowrap;width:90px;}
+.cast-table textarea{width:100%;padding:5px 7px;border:1px solid #c4b5fd;border-radius:4px;
+  font-size:11.5px;font-family:var(--font);resize:vertical;min-height:38px;}
+.cast-table textarea:focus{outline:none;border-color:var(--purple);box-shadow:0 0 0 2px rgba(106,27,154,.1);}
+
+/* STPA NOTE */
+.stpa-note{background:linear-gradient(135deg,#1e3a5f,#4c1d95);color:#fff;border-radius:8px;
+  padding:12px 14px;margin-top:14px;font-size:11.5px;line-height:1.6;}
+.stpa-note strong{color:#c4b5fd;}
+.stpa-note-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:#a78bfa;margin-bottom:6px;}
+
+/* 5 WHYS */
+.why-chain{display:flex;flex-direction:column;gap:6px;}
+.why-row{display:flex;align-items:center;gap:8px;}
+.why-num{min-width:52px;font-size:10px;font-weight:700;color:var(--blue);}
+.why-input{flex:1;}
+.why-input input{width:100%;padding:7px 10px;border:1px solid var(--border);
+  border-radius:5px;font-size:12.5px;font-family:var(--font);}
+.why-input input:focus{outline:none;border-color:var(--blue);box-shadow:0 0 0 3px rgba(36,113,163,.1);}
+.why-root{margin-top:10px;padding-top:10px;border-top:1px dashed #fca5a5;}
+.why-root .why-num{color:var(--red);}
+.why-root .why-input input{border-color:#fca5a5;background:#fff5f5;font-weight:600;}
+
+/* PROCESS MAP */
+.pm-bar{background:#fff;border-bottom:1px solid var(--border);padding:8px 16px;
+  display:flex;justify-content:space-between;align-items:center;flex-shrink:0;}
+.pm-legend{display:flex;align-items:center;gap:12px;font-size:11px;color:var(--muted);}
+.leg-item{display:flex;align-items:center;gap:4px;font-weight:600;}
+.leg-dot{width:9px;height:9px;border-radius:50%;}
+.pm-body{flex:1;min-height:0;display:flex;overflow:hidden;}
+.pm-sidebar{width:220px;min-width:220px;background:#fff;border-right:1px solid var(--border);
+  display:flex;flex-direction:column;overflow:hidden;}
+.pm-sidebar-hd{padding:10px 12px;background:#f8fafc;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;font-weight:700;
+  font-size:10.5px;color:var(--navy);flex-shrink:0;text-transform:uppercase;letter-spacing:.6px;}
+.pm-sidebar-list{flex:1;overflow-y:auto;}
+.pm-canvas-wrap{flex:1;overflow:auto;padding:16px;background:var(--bg);}
+.pm-detail{width:290px;min-width:290px;background:var(--card);border-left:1px solid var(--border);
+  overflow-y:auto;display:none;flex-direction:column;}
+.pm-detail.open{display:flex;}
+.pmd-hd{padding:14px 16px;border-bottom:1px solid var(--border);background:#f8fafc;position:relative;}
+.pmd-hd h4{margin:0 22px 4px 0;font-size:12.5px;color:var(--navy);}
+.pmd-close{position:absolute;top:10px;right:12px;background:none;border:none;
+  cursor:pointer;font-size:16px;color:var(--muted);}
+.pmd-body{padding:14px;flex:1;}
+.pmd-sect{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;
+  color:var(--muted);margin:0 0 8px;}
+.pm-map-item{padding:9px 12px;border-bottom:1px solid #f0f3f6;cursor:pointer;transition:background .12s;}
+.pm-map-item:hover{background:#f8fafc;}
+.pm-map-item.sel{background:var(--blue-lt);border-left:3px solid var(--blue);}
+.pm-map-item .li-title{font-size:12px;font-weight:600;}
+.pm-map-item .li-sub{font-size:10.5px;color:var(--muted);}
+.fm-chip{background:var(--bg);border:1px solid var(--border);border-radius:6px;
+  padding:8px 10px;margin-bottom:7px;}
+.fm-chip-mode{font-size:11.5px;font-weight:600;color:var(--navy);margin-bottom:2px;}
+.fm-chip-step{font-size:10.5px;color:var(--muted);}
+
+/* STEP BUILDER */
+.lane-tags{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px;}
+.lane-tag{display:flex;align-items:center;gap:4px;background:var(--blue-lt);color:var(--blue);
+  padding:3px 10px;border-radius:10px;font-size:11.5px;font-weight:600;}
+.lane-tag button{background:none;border:none;cursor:pointer;color:var(--blue);font-size:12px;padding:0;}
+.lane-tag button:hover{color:var(--red);}
+
+/* FMEA TABLE */
+.fmea-wrap{overflow-x:auto;}
+.fmea-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.fmea-table th{background:var(--navy-md);color:#fff;padding:8px 7px;text-align:left;
+  white-space:nowrap;font-size:10px;font-weight:600;}
+.fmea-table td{padding:7px;border-bottom:1px solid #f0f3f6;vertical-align:top;}
+.fmea-table tr:hover td{background:#f8fafc;}
+.rpn-cell{font-weight:700;text-align:center;padding:3px 8px;border-radius:4px;
+  display:inline-block;min-width:34px;}
+.rpn-h{background:var(--red-lt);color:var(--red);}
+.rpn-m{background:var(--amber-lt);color:var(--amber);}
+.rpn-l{background:var(--green-lt);color:var(--green);}
+.score-c{text-align:center;font-weight:600;}
+.fmea-summary{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+.fmea-kpi{border-radius:7px;padding:10px 16px;text-align:center;}
+.kpi-label{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;margin-bottom:3px;}
+.kpi-val{font-size:20px;font-weight:700;}
+
+/* HUDDLE */
+.huddle-chip{display:flex;gap:12px;padding:12px;border:1px solid #fde68a;background:#fffbeb;
+  border-radius:7px;margin-bottom:8px;cursor:pointer;transition:background .12s;}
+.huddle-chip:hover{background:#fef3c7;}
+.huddle-chip-body h4{margin:0 0 3px;font-size:12.5px;}
+.huddle-chip-body p{margin:0;font-size:11px;color:var(--muted);}
+.huddle-log-item{padding:11px 14px;border-bottom:1px solid #f0f3f6;cursor:pointer;transition:background .12s;}
+.huddle-log-item:hover{background:#f8fafc;}
+.huddle-log-item.sel{background:var(--amber-lt);border-left:3px solid var(--amber);}
+.hli-date{font-weight:700;font-size:12px;margin-bottom:2px;}
+.hli-att{font-size:11px;color:var(--muted);}
+.hli-preview{font-size:10.5px;color:var(--muted);margin-top:3px;font-style:italic;}
+
+/* P&P */
+.info-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;background:#f8fafc;
+  border-radius:7px;padding:14px;margin-bottom:18px;border:1px solid var(--border);}
+.ig-label{font-size:10px;font-weight:700;text-transform:uppercase;color:var(--muted);
+  letter-spacing:.5px;margin-bottom:3px;}
+.ig-val{font-size:12.5px;font-weight:500;}
+.overdue{color:var(--red)!important;font-weight:600;}
+
+/* BUTTONS */
+.btn-save{background:var(--teal);color:#fff;border:none;padding:9px 22px;border-radius:5px;
+  cursor:pointer;font-weight:600;font-size:12.5px;transition:background .12s;}
+.btn-save:hover{background:#117a65;}
+.btn-del{background:var(--red-lt);color:var(--red);border:1px solid #fca5a5;padding:5px 11px;
+  border-radius:4px;cursor:pointer;font-size:11.5px;font-weight:600;}
+.btn-del:hover{background:#fbd7d4;}
+.btn-ghost{background:#fff;border:1px solid var(--border);padding:7px 18px;border-radius:5px;
+  cursor:pointer;font-size:12.5px;color:var(--text);}
+.btn-ghost:hover{background:var(--bg);}
+.btn-primary{background:var(--blue);color:#fff;border:none;padding:9px 22px;border-radius:5px;
+  cursor:pointer;font-weight:600;font-size:12.5px;}
+.btn-primary:hover{background:#1a5f8a;}
+.btn-icon{background:none;border:1px solid var(--border);padding:4px 9px;border-radius:4px;
+  cursor:pointer;font-size:12px;}
+.btn-icon:hover{background:var(--bg);}
+.btn-link{background:none;border:none;color:var(--blue);cursor:pointer;font-size:12px;
+  text-decoration:underline;padding:0;}
+.form-footer{display:flex;gap:10px;justify-content:flex-end;margin-top:18px;}
+hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
+
+/* MODAL */
+.modal-bg{position:fixed;inset:0;background:rgba(10,20,40,.62);display:none;
+  align-items:center;justify-content:center;z-index:500;backdrop-filter:blur(2px);}
+.modal-bg.open{display:flex;}
+.modal{background:#fff;border-radius:10px;padding:24px;max-width:720px;
+  width:96%;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,.22);}
+.modal h3{margin:0 0 18px;color:var(--navy);font-size:13.5px;}
+.modal-footer{margin-top:18px;display:flex;gap:10px;justify-content:flex-end;
+  padding-top:14px;border-top:1px solid var(--border);}
+
+/* STPA UCA TABLE */
+.stpa-proj-hd{background:linear-gradient(135deg,#1e1b4b,#4c1d95);color:#fff;border-radius:8px;
+  padding:14px 18px;margin-bottom:16px;}
+.stpa-proj-hd h3{margin:0 0 4px;font-size:13.5px;}
+.stpa-proj-hd p{margin:0;font-size:11.5px;opacity:.82;}
+.stpa-hazards{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 0;}
+.stpa-haz{background:rgba(255,255,255,.15);padding:3px 9px;border-radius:8px;
+  font-size:10.5px;font-weight:600;}
+.uca-wrap{overflow-x:auto;}
+.uca-table{width:100%;border-collapse:collapse;font-size:11.5px;}
+.uca-table th{background:#1e1b4b;color:#c4b5fd;padding:8px 8px;text-align:left;
+  white-space:nowrap;font-size:10px;font-weight:700;letter-spacing:.4px;}
+.uca-table td{padding:7px 8px;border-bottom:1px solid #f0ebff;vertical-align:top;}
+.uca-table tr:hover td{background:#faf5ff;}
+.uca-type{display:inline-block;padding:2px 7px;border-radius:8px;font-size:10px;font-weight:700;white-space:nowrap;}
+.uca-ng{background:#fee2e2;color:#991b1b;}
+.uca-gi{background:#fef3c7;color:#92400e;}
+.uca-wt{background:#ede9fe;color:#5b21b6;}
+.uca-wd{background:#dbeafe;color:#1e40af;}
+.stpa-summary{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;}
+
+/* ─── end STPA CSS ─── */
+.insight{background:linear-gradient(135deg,#1e3a5f,#2471a3);color:#fff;border-radius:8px;
+  padding:14px 18px;margin-bottom:16px;display:flex;justify-content:space-between;align-items:center;}
+.insight h4{margin:0 0 3px;font-size:13px;}
+.insight p{margin:0;font-size:11.5px;opacity:.82;}
+.insight button{background:#fff;color:var(--blue);border:none;padding:8px 16px;
+  border-radius:6px;font-weight:700;font-size:12px;cursor:pointer;flex-shrink:0;margin-left:18px;}
+#csv-file-in{display:none;}
+</style>
+</head>
+<body>
+
+<!-- SYNC OVERLAY -->
+<div id="sync-overlay">
+  <div class="sync-box">
+    <div class="sync-logo">🛡️</div>
+    <h2>SAFETY <span>OS</span></h2>
+    <p>TG-100 Practical Guide — Demo Edition<br>
+       Map · Assess Risk · Learn from Every Incident.</p>
+    <div class="sync-btns">
+      <button class="btn-load" onclick="triggerCSVLoad()">📂 Load CSV Backup</button>
+      <button class="btn-fresh" onclick="startFresh()">✨ Start Fresh</button>
+    </div>
+    <p class="sync-note">Data stored in browser. Export CSV to persist or share.</p>
+  </div>
+</div>
+<input type="file" id="csv-file-in" accept=".csv" onchange="parseCSVFile(event)">
+
+<!-- NAV -->
+<nav>
+  <div class="nav-brand">SAFETY <span>OS</span></div>
+  <button id="nav-huddle" class="tab-btn active" onclick="showTab('huddle')">📋 Daily Huddle</button>
+  <button id="nav-pm"     class="tab-btn" onclick="showTab('pm')">🗺️ Process Maps</button>
+  <button id="nav-ils"    class="tab-btn" onclick="showTab('ils')">🔍 ILS &amp; RCA</button>
+  <button id="nav-fmea"   class="tab-btn" onclick="showTab('fmea')">⚠️ Risk Assessment</button>
+  <button id="nav-pp"     class="tab-btn" onclick="showTab('pp')">📁 P&amp;P Audit</button>
+</nav>
+
+<!-- TOOLBAR -->
+<div class="toolbar">
+  <div class="tb-left"><span class="dot"></span><span>Browser DB Active</span></div>
+  <div class="tb-right">
+    <span id="db-count"></span>
+    <button class="btn-xs" onclick="triggerCSVLoad()">📂 Load CSV</button>
+    <button class="btn-xs green" onclick="exportCSV()">💾 Save CSV</button>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ── HUDDLE ── -->
+<div id="huddle" class="tab-content active">
+  <div class="split">
+    <div class="split-side">
+      <div class="split-side-hd">
+        <span>📋 Huddle Log</span>
+        <span id="huddle-count" style="font-size:10px;color:var(--muted);font-weight:400;text-transform:none;"></span>
+      </div>
+      <div class="split-side-list" id="huddle-log-list">
+        <div class="empty-st"><div class="empty-st-icon">📋</div>No huddles yet</div>
+      </div>
+    </div>
+    <div class="split-main">
+      <div id="huddle-detail-view" style="display:none;"></div>
+      <div id="huddle-form-view">
+        <div class="card">
+          <div class="card-hd">
+            <div><h3 class="card-title">📋 New Daily Huddle</h3>
+              <div class="card-sub" id="huddle-date"></div></div>
+          </div>
+          <p style="font-size:12.5px;color:var(--muted);margin:0 0 10px;">Yesterday's incidents — click to open in ILS.</p>
+          <div id="huddle-feed"></div>
+          <hr class="divider">
+          <div class="grid2">
+            <div class="fg"><label>📅 Huddle Date</label><input type="date" id="h-date"></div>
+            <div class="fg"><label>👥 Attendees</label><input type="text" id="h-attendees" placeholder="Names / roles present"></div>
+            <div class="fg" style="grid-column:1/-1">
+              <label>⚡ Anticipated Risks / Tomorrow's Concerns</label>
+              <textarea id="h-tomorrow" rows="3" placeholder="Complex cases, equipment issues, staffing gaps, scheduling pressures…"></textarea>
+            </div>
+            <div class="fg" style="grid-column:1/-1">
+              <label>✅ Actions Assigned</label>
+              <textarea id="h-actions" rows="2" placeholder="Owner · action · deadline for each item…"></textarea>
+            </div>
+          </div>
+          <div class="form-footer"><button class="btn-save" onclick="saveHuddle()">Log Huddle</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── PROCESS MAP ── -->
+<div id="pm" class="tab-content">
+  <div class="pm-bar">
+    <div class="pm-legend">
+      <span style="font-weight:700;color:var(--navy);font-size:12px;margin-right:4px;">FMEA Risk:</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#ef4444;"></span>High &gt;100</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#f59e0b;"></span>Med 51–100</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#22c55e;"></span>Low ≤50</span>
+      <span class="leg-item"><span class="leg-dot" style="background:#94a3b8;"></span>No data</span>
+      <span style="font-size:10.5px;color:var(--muted);margin-left:8px;">Click any step to inspect</span>
+    </div>
+    <div style="display:flex;gap:8px;">
+      <button class="btn-xs amber" onclick="loadTG100Templates();renderPMSidebar();">⚡ TG-100 Templates</button>
+      <button class="btn-xs blue" onclick="openModal('pm-new-modal')">+ New Process Map</button>
+    </div>
+  </div>
+  <div class="pm-body">
+    <div class="pm-sidebar">
+      <div class="pm-sidebar-hd"><span>Maps</span>
+        <button class="btn-xs blue" onclick="openModal('pm-new-modal')" style="padding:3px 8px;font-size:10.5px;">+</button>
+      </div>
+      <div class="pm-sidebar-list" id="pm-sidebar-list">
+        <div class="empty-st"><div class="empty-st-icon">🗺️</div>No maps yet</div>
+      </div>
+    </div>
+    <div class="pm-canvas-wrap" id="pm-canvas-wrap">
+      <div id="pm-svg-wrap">
+        <div class="empty-st" style="padding-top:80px;">
+          <div class="empty-st-icon">🗺️</div>
+          <p style="margin-bottom:16px;">Select a map or create one.<br>Load TG-100 templates for a pre-built RT workflow.</p>
+          <button class="btn-primary" onclick="loadTG100Templates();renderPMSidebar();">⚡ Load TG-100 Templates</button>
+        </div>
+      </div>
+    </div>
+    <div class="pm-detail" id="pm-detail">
+      <div class="pmd-hd">
+        <h4 id="pmd-title">Step Details</h4>
+        <div id="pmd-meta"></div>
+        <button class="pmd-close" onclick="closePMDetail()">✕</button>
+      </div>
+      <div class="pmd-body" id="pmd-body"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── ILS & RCA ── -->
+<div id="ils" class="tab-content">
+  <div class="split">
+    <div class="split-side" style="width:280px;min-width:280px;">
+      <div class="split-side-hd">
+        <span>Incident Log</span>
+        <button class="btn-xs blue" onclick="newIncident()">+ New</button>
+      </div>
+      <!-- Causality Distribution Chart -->
+      <div class="cause-dist" id="cause-dist-panel"></div>
+      <div class="split-side-list" id="ils-list">
+        <div class="empty-st"><div class="empty-st-icon">📭</div>No incidents logged</div>
+      </div>
+    </div>
+    <div class="split-main">
+      <div class="card">
+        <div class="card-hd">
+          <h3 class="card-title" id="ils-title">New Incident Report</h3>
+        </div>
+        <input type="hidden" id="i-id">
+
+        <!-- 5 W's -->
+        <div class="section-box box-5w">
+          <div class="box-hd blue">The 5 W's — Incident Facts</div>
+          <div class="grid2">
+            <div class="fg"><label>📅 When</label><input type="datetime-local" id="i-when"></div>
+            <div class="fg"><label>📍 Where</label><input type="text" id="i-where" placeholder="e.g., Vault 3 — TrueBeam"></div>
+            <div class="fg"><label>👤 Who (reported by)</label><input type="text" id="i-who" placeholder="Name and role"></div>
+            <div class="fg"><label>🏷️ Event Type <span style="font-weight:400;font-size:10px;color:var(--muted);">(Ford et al. 2012 / RO-ILS taxonomy)</span></label>
+              <select id="i-event-type" onchange="onEventTypeChange()">
+                <option value="">Select…</option>
+                <option value="process_improvement">🔧 Process Improvement — workflow observation, no error</option>
+                <option value="unsafe_condition">⚠️ Unsafe Condition — latent hazard identified before harm</option>
+                <option value="near_miss">🎯 Near Miss — could have harmed but did not reach patient</option>
+                <option value="incident">🚨 Incident — reached the patient</option>
+              </select></div>
+            <div class="fg" id="severity-fg" style="display:none;"><label>💥 Incident Severity</label>
+              <select id="i-severity" onchange="onSeverityChange()">
+                <option value="">Select…</option>
+                <option>Minor (no patient impact)</option>
+                <option>Moderate (potential impact)</option>
+                <option>Significant (patient affected)</option>
+                <option>Serious (harm occurred)</option>
+              </select></div>
+            <div class="fg" style="grid-column:1/-1"><label>📋 What (description)</label>
+              <textarea id="i-what" rows="3" placeholder="Describe what happened in factual, observable terms…"></textarea></div>
+            <div class="fg" style="grid-column:1/-1"><label>💡 Why (initial statement)</label>
+              <textarea id="i-why" rows="2" placeholder="First impression of cause — before deep analysis…"></textarea></div>
+            <div class="fg" style="grid-column:1/-1">
+              <label>🗺️ Linked Process Step</label>
+              <select id="i-steplink"><option value="">Select a process step…</option></select>
+            </div>
+          </div>
+
+          <!-- Causality Categories -->
+          <div class="fg" style="margin-top:6px;">
+            <label>📊 Causality Categories (Ford et al. taxonomy — select all that apply)</label>
+            <div class="cause-grid" id="causality-checks">
+              <label class="cause-chip cause-org" onclick="toggleCause(this,'ORG')">
+                <input type="checkbox" value="ORG">
+                <span class="cause-chip-icon">🏢</span>
+                <span class="cause-chip-label">Organizational Mgmt</span>
+              </label>
+              <label class="cause-chip cause-tech" onclick="toggleCause(this,'TECH')">
+                <input type="checkbox" value="TECH">
+                <span class="cause-chip-icon">⚙️</span>
+                <span class="cause-chip-label">Technical / Equipment</span>
+              </label>
+              <label class="cause-chip cause-hb" onclick="toggleCause(this,'HB')">
+                <input type="checkbox" value="HB">
+                <span class="cause-chip-icon">👤</span>
+                <span class="cause-chip-label">Human Behavior</span>
+              </label>
+              <label class="cause-chip cause-proc" onclick="toggleCause(this,'PROC')">
+                <input type="checkbox" value="PROC">
+                <span class="cause-chip-icon">📋</span>
+                <span class="cause-chip-label">Procedural Issues</span>
+              </label>
+              <label class="cause-chip cause-pt" onclick="toggleCause(this,'PT')">
+                <input type="checkbox" value="PT">
+                <span class="cause-chip-icon">🏥</span>
+                <span class="cause-chip-label">Patient-Related</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- 5 Whys RCA -->
+        <div class="section-box box-5why">
+          <div class="box-hd amber">Root Cause Analysis — 5 Whys Chain
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:10px;margin-left:8px;">(based on chain-of-event model)</span>
+          </div>
+          <p style="font-size:11.5px;color:var(--muted);margin:0 0 12px;">
+            Ask "Why?" iteratively toward the systemic root cause. Suitable for <em>complicated</em> issues.</p>
+          <div class="why-chain">
+            <div class="why-row"><div class="why-num">Why 1</div>
+              <div class="why-input"><input type="text" id="w1" placeholder="Why did the incident occur?"></div></div>
+            <div class="why-row" style="padding-left:20px;"><div class="why-num">Why 2</div>
+              <div class="why-input"><input type="text" id="w2" placeholder="Why did that happen?"></div></div>
+            <div class="why-row" style="padding-left:40px;"><div class="why-num">Why 3</div>
+              <div class="why-input"><input type="text" id="w3" placeholder="Why?"></div></div>
+            <div class="why-row" style="padding-left:60px;"><div class="why-num">Why 4</div>
+              <div class="why-input"><input type="text" id="w4" placeholder="Why?"></div></div>
+            <div class="why-row" style="padding-left:80px;"><div class="why-num">Why 5</div>
+              <div class="why-input"><input type="text" id="w5" placeholder="Why?"></div></div>
+            <div class="why-row why-root">
+              <div class="why-num" style="font-size:9px;line-height:1.3;">ROOT<br>CAUSE</div>
+              <div class="why-input"><input type="text" id="w-root" placeholder="Systemic root cause — the latent condition to address"></div>
+            </div>
+          </div>
+          <div class="fg" style="margin-top:14px;"><label>🔧 Corrective Action &amp; Owner</label>
+            <textarea id="i-action" rows="2" placeholder="What, by whom, by when?"></textarea></div>
+          <div class="fg"><label>Status</label>
+            <select id="i-status">
+              <option>Open</option><option>Under Investigation</option>
+              <option>Action Pending</option><option>Closed</option>
+            </select></div>
+
+          <!-- P&P LINKAGE — closes Figure 5 loop -->
+          <div class="fg" style="margin-top:6px;">
+            <label>📁 Linked Policies to Review / Update
+              <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--muted);font-size:10px;margin-left:6px;">Select all P&amp;Ps this incident implies should be reviewed or amended</span>
+            </label>
+            <div id="pp-link-checks" style="display:flex;flex-direction:column;gap:5px;margin-top:4px;max-height:120px;overflow-y:auto;padding:8px;background:#f8fafc;border:1px solid var(--border);border-radius:6px;"></div>
+            <div id="pp-link-buttons" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
+          </div>
+        </div><!-- /.box-5why -->
+
+        <!-- CAST-INFORMED ANALYSIS — shown for Significant/Serious -->
+        <div class="section-box box-cast" id="cast-panel" style="display:none;">
+          <div class="box-hd purple">CAST-Informed Analysis — Systems Approach
+            <span style="font-weight:400;text-transform:none;letter-spacing:0;color:#9c67d4;font-size:10px;margin-left:8px;">(based on STAMP systemic model — Leveson 2004)</span>
+          </div>
+          <p style="font-size:11.5px;color:#6b3fa0;margin:0 0 14px;line-height:1.6;">
+            For <strong>Significant or Serious</strong> events, go beyond 5 Whys. CAST examines each decision-maker's
+            context and the systemic control structure flaws that allowed the accident to occur.
+            Based on Wong &amp; Pawlicki, JACMP 2025.</p>
+
+          <div class="fg"><label>🔒 Safety Constraint Violated</label>
+            <textarea id="cast-constraint" rows="2"
+              placeholder="State the constraint that was not enforced. e.g., 'Treatment shall not be delivered without verified patient identity and plan confirmation.'"></textarea></div>
+
+          <div class="fg" style="margin-top:4px;"><label>👥 Controller Analysis — Decision-Makers Involved</label></div>
+          <table class="cast-table">
+            <thead><tr>
+              <th>Controller</th><th>Contribution to incident</th>
+              <th>Process model flaw (what did they believe?)</th>
+              <th>Contextual factors</th>
+            </tr></thead>
+            <tbody>
+              <tr><td>RTT / Therapist</td>
+                <td><textarea id="cast-rtt-c" placeholder="What did they do or not do?"></textarea></td>
+                <td><textarea id="cast-rtt-m" placeholder="What incorrect belief guided their action?"></textarea></td>
+                <td><textarea id="cast-rtt-x" placeholder="Time pressure, staffing, information gaps…"></textarea></td></tr>
+              <tr><td>Physicist</td>
+                <td><textarea id="cast-phys-c" placeholder=""></textarea></td>
+                <td><textarea id="cast-phys-m" placeholder=""></textarea></td>
+                <td><textarea id="cast-phys-x" placeholder=""></textarea></td></tr>
+              <tr><td>Dosimetrist</td>
+                <td><textarea id="cast-dosi-c" placeholder=""></textarea></td>
+                <td><textarea id="cast-dosi-m" placeholder=""></textarea></td>
+                <td><textarea id="cast-dosi-x" placeholder=""></textarea></td></tr>
+              <tr><td>Management</td>
+                <td><textarea id="cast-mgmt-c" placeholder="Policies, staffing, resource allocation…"></textarea></td>
+                <td><textarea id="cast-mgmt-m" placeholder=""></textarea></td>
+                <td><textarea id="cast-mgmt-x" placeholder=""></textarea></td></tr>
+              <tr><td>Equipment / Vendor</td>
+                <td><textarea id="cast-equip-c" placeholder="Software interlocks, design, feedback…"></textarea></td>
+                <td><textarea id="cast-equip-m" placeholder=""></textarea></td>
+                <td><textarea id="cast-equip-x" placeholder=""></textarea></td></tr>
+            </tbody>
+          </table>
+
+          <div class="fg"><label>🔗 Systemic Flaw (cross-cutting pattern across controllers)</label>
+            <textarea id="cast-systemic" rows="2"
+              placeholder="e.g., 'Inadequate sharing of safety information across sites; no structured pathway for recurring issues to reach management level.'"></textarea></div>
+          <div class="fg"><label>🛡️ System-Level Intervention Recommended</label>
+            <textarea id="cast-intervention" rows="2"
+              placeholder="Address the control structure flaw — not just the frontline behavior. e.g., 'Implement cross-site ILS pattern alerting; mandate management review when same failure mode recurs ≥2 times.'"></textarea></div>
+
+          <div style="background:#e0d7f3;border-radius:6px;padding:10px 12px;margin-top:8px;font-size:11px;color:#4c1d95;line-height:1.6;">
+            <strong>Note:</strong> Pawlicki et al. (Med Phys 2019) found that <strong>73% of causal scenarios in RT are non-technical</strong> —
+            organizational management (33%), procedural (23%), human behavior (14%). Only 27% were equipment-related.
+            CAST is designed to surface the 73%.
+          </div>
+        </div>
+
+        <div class="form-footer">
+          <button class="btn-ghost" onclick="newIncident()">Clear</button>
+          <button class="btn-save" onclick="saveIncident()">Save Incident &amp; RCA</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── FMEA ── -->
+<div id="fmea" class="tab-content">
+  <div class="split">
+    <div class="split-side">
+      <div class="split-side-hd"><span>Risk Assessment Projects</span>
+        <button class="btn-xs blue" onclick="openModal('fmea-proj-modal')">+ New</button></div>
+      <div class="split-side-list" id="fmea-proj-list">
+        <div class="empty-st"><div class="empty-st-icon">📊</div>No projects yet</div></div>
+    </div>
+    <div class="split-main" id="fmea-main">
+      <div class="insight">
+        <div><h4>⚡ Load TG-100 Canonical FMEA Templates</h4>
+          <p>CT Simulation · Treatment Planning · Plan QA · Treatment Delivery — linked to process map.</p></div>
+        <button onclick="loadTG100Templates()">Load Templates</button>
+      </div>
+      <div class="insight" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);">
+        <div><h4>📄 Literature Examples</h4>
+          <p>3 paper incidents (Wong &amp; Pawlicki 2025 · Silvis-Cividjian 2020) + Equipment Implementation FMEA (Pawlicki 2019). Pre-loaded on fresh start — use this if loading from CSV backup.</p></div>
+        <button onclick="loadLiteratureExamples()">Reload</button>
+      </div>
+      <div class="empty-st" style="padding-top:40px;">
+        <div class="empty-st-icon">⚠️</div>
+        <p style="margin-bottom:16px;">Select or create an FMEA project.</p>
+        <button class="btn-primary" onclick="openModal('fmea-proj-modal')">+ New Custom FMEA</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── P&P ── -->
+<div id="pp" class="tab-content">
+  <div class="split">
+    <div class="split-side">
+      <div class="split-side-hd"><span>Policy Directory</span>
+        <button class="btn-xs blue" onclick="openModal('pp-modal')">+ Add</button></div>
+      <div class="split-side-list" id="pp-list">
+        <div class="empty-st"><div class="empty-st-icon">📁</div>No policies added</div></div>
+    </div>
+    <div class="split-main" id="pp-main">
+      <div class="empty-st" style="padding-top:80px;">
+        <div class="empty-st-icon">📁</div><p>Select a policy to audit.</p></div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /.main -->
+
+<!-- ══ MODALS ══ -->
+<div id="pm-new-modal" class="modal-bg">
+  <div class="modal"><h3>New Process Map</h3>
+    <div class="fg"><label>Process Name</label>
+      <input type="text" id="pnm-name" placeholder="e.g., Stereotactic Radiosurgery Workflow"></div>
+    <div class="fg"><label>Description</label>
+      <textarea id="pnm-desc" rows="2"></textarea></div>
+    <div class="fg"><label>Swimlane Roles</label>
+      <div style="display:flex;gap:8px;margin-bottom:8px;">
+        <input type="text" id="pnm-lane-input" placeholder="e.g., Radiation Therapist"
+          onkeydown="if(event.key==='Enter'){addPMModalLane();event.preventDefault();}">
+        <button class="btn-xs blue" onclick="addPMModalLane()" style="flex-shrink:0;">Add</button>
+      </div>
+      <div id="pnm-lanes" class="lane-tags"></div></div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('pm-new-modal')">Cancel</button>
+      <button class="btn-save" onclick="savePMNew()">Create Map</button>
+    </div>
+  </div>
+</div>
+
+<div id="pm-step-modal" class="modal-bg">
+  <div class="modal"><h3 id="psm-title">Add Process Step</h3>
+    <input type="hidden" id="psm-mapid"><input type="hidden" id="psm-stepid">
+    <div class="grid2">
+      <div class="fg"><label>Step Label</label><input type="text" id="psm-label" placeholder="e.g., CT Simulation"></div>
+      <div class="fg"><label>Phase / Column</label><input type="number" id="psm-col" min="1" max="20" value="1"></div>
+      <div class="fg"><label>Responsible Role</label><select id="psm-lane"></select></div>
+      <div class="fg"><label>Linked FMEA Project</label><select id="psm-fmea"><option value="">None</option></select></div>
+      <div class="fg" style="grid-column:1/-1"><label>Step Description</label>
+        <textarea id="psm-desc" rows="3"></textarea></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('pm-step-modal')">Cancel</button>
+      <button class="btn-save" onclick="savePMStep()">Save Step</button>
+    </div>
+  </div>
+</div>
+
+<div id="fmea-proj-modal" class="modal-bg">
+  <div class="modal"><h3>New FMEA Project</h3>
+    <div class="grid2">
+      <div class="fg" style="grid-column:1/-1"><label>Process / Project Name</label>
+        <input type="text" id="fp-name"></div>
+      <div class="fg"><label>Department</label><input type="text" id="fp-dept"></div>
+      <div class="fg"><label>Facilitator</label><input type="text" id="fp-fac"></div>
+      <div class="fg"><label>Date</label><input type="date" id="fp-date"></div>
+      <div class="fg"><label>Version</label><input type="text" id="fp-ver" value="v1.0"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('fmea-proj-modal')">Cancel</button>
+      <button class="btn-save" onclick="saveFmeaProject()">Create Project</button>
+    </div>
+  </div>
+</div>
+
+<div id="fmea-item-modal" class="modal-bg">
+  <div class="modal"><h3 id="fi-modal-title">Add Failure Mode</h3>
+    <input type="hidden" id="fi-id">
+    <div class="grid2">
+      <div class="fg"><label>Process Step</label><input type="text" id="fi-step"></div>
+      <div class="fg"><label>Potential Failure Mode</label><input type="text" id="fi-mode"></div>
+      <div class="fg" style="grid-column:1/-1"><label>Potential Effects of Failure</label>
+        <textarea id="fi-effect" rows="2"></textarea></div>
+      <div class="fg"><label>Severity (S) 1–10</label>
+        <input type="number" id="fi-s" min="1" max="10" oninput="calcRPN()">
+        <div class="scale-tip">1=No effect · 10=Catastrophic</div></div>
+      <div class="fg" style="grid-column:1/-1"><label>Potential Cause(s)</label>
+        <textarea id="fi-cause" rows="2"></textarea></div>
+      <div class="fg"><label>Occurrence (O) 1–10</label>
+        <input type="number" id="fi-o" min="1" max="10" oninput="calcRPN()">
+        <div class="scale-tip">1=Remote · 10=Almost certain</div></div>
+      <div class="fg" style="grid-column:1/-1"><label>Current Controls</label>
+        <textarea id="fi-ctrl" rows="2"></textarea></div>
+      <div class="fg"><label>Detection (D) 1–10</label>
+        <input type="number" id="fi-d" min="1" max="10" oninput="calcRPN()">
+        <div class="scale-tip">1=Always detected · 10=Undetectable</div></div>
+      <div class="fg"><label>RPN = S × O × D</label>
+        <input type="text" id="fi-rpn" readonly
+          style="background:#f0f4f8;font-weight:700;font-size:16px;text-align:center;"></div>
+      <div class="fg" style="grid-column:1/-1"><label>Recommended Actions</label>
+        <textarea id="fi-action" rows="2"></textarea></div>
+      <div class="fg"><label>Responsible</label><input type="text" id="fi-resp"></div>
+      <div class="fg"><label>Target Date</label><input type="date" id="fi-due"></div>
+      <div class="fg"><label>Status</label>
+        <select id="fi-status">
+          <option>Open</option><option>In Progress</option>
+          <option>Completed</option><option>Accepted Risk</option>
+        </select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('fmea-item-modal')">Cancel</button>
+      <button class="btn-save" onclick="saveFmeaItem()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="pp-modal" class="modal-bg">
+  <div class="modal"><h3>Add Policy to Directory</h3>
+    <div class="grid2">
+      <div class="fg" style="grid-column:1/-1"><label>Policy Name</label><input type="text" id="pm-name"></div>
+      <div class="fg"><label>Filename (.docx)</label><input type="text" id="pm-file" placeholder="Policy_v1.docx"></div>
+      <div class="fg"><label>Department</label><input type="text" id="pm-dept"></div>
+      <div class="fg"><label>Version</label><input type="text" id="pm-ver"></div>
+      <div class="fg"><label>Owner</label><input type="text" id="pm-owner"></div>
+      <div class="fg"><label>Effective Date</label><input type="date" id="pm-eff"></div>
+      <div class="fg"><label>Next Review</label><input type="date" id="pm-review"></div>
+      <div class="fg"><label>Status</label>
+        <select id="pm-status">
+          <option>Active</option><option>Under Review</option>
+          <option>Outdated</option><option>Retired</option>
+        </select></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-ghost" onclick="closeModal('pp-modal')">Cancel</button>
+      <button class="btn-save" onclick="savePolicy()">Add</button>
+    </div>
+  </div>
+</div>
+
+<!-- CHECKLIST MODAL -->
+<div id="checklist-modal" style="display:none;position:fixed;inset:0;z-index:1000;background:#fff;overflow-y:auto;padding:24px;">
+  <div style="max-width:900px;margin:0 auto;">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;padding-bottom:12px;border-bottom:2px solid #e2e8f0;">
+      <div style="font-size:12px;color:#64748b;">📋 FMEA Checklist Preview — <em>Demo only, not for clinical use</em></div>
+      <button onclick="document.getElementById('checklist-modal').style.display='none'" style="background:#1e3a5f;color:#fff;border:none;padding:9px 20px;border-radius:6px;font-size:13px;font-weight:700;cursor:pointer;">← Back to Risk Assessment</button>
+    </div>
+    <div id="checklist-body"></div>
+  </div>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════════════════
+   CAUSALITY TAXONOMY — Ford et al. / Halcyon paper
+═══════════════════════════════════════════════════════ */
+const CAUSES={
+  ORG: {label:'Org. Mgmt', color:'#2563eb', bar:'#2563eb'},
+  TECH:{label:'Technical', color:'#0891b2', bar:'#0891b2'},
+  HB:  {label:'Human Beh',color:'#dc2626', bar:'#dc2626'},
+  PROC:{label:'Procedural',color:'#d97706', bar:'#d97706'},
+  PT:  {label:'Patient',  color:'#7c3aed', bar:'#7c3aed'}
+};
+// Reference benchmark from Pawlicki et al. Med Phys 2019 (Halcyon STPA)
+const HALCYON_BENCH={ORG:33,TECH:27,HB:14,PROC:23,PT:2};
+
+function toggleCause(el, code){
+  el.classList.toggle('checked');
+}
+function getCheckedCauses(){
+  return [...document.querySelectorAll('#causality-checks input[type=checkbox]')]
+    .filter(c=>c.closest('.cause-chip').classList.contains('checked'))
+    .map(c=>c.value);
+}
+function setCheckedCauses(arr){
+  document.querySelectorAll('#causality-checks .cause-chip').forEach(chip=>{
+    const val=chip.querySelector('input').value;
+    chip.classList.toggle('checked', arr&&arr.includes(val));
+  });
+}
+
+function renderCauseDist(){
+  const panel=document.getElementById('cause-dist-panel');
+  const counts={ORG:0,TECH:0,HB:0,PROC:0,PT:0};
+  db.incidents.forEach(inc=>{
+    (inc.causality||[]).forEach(c=>{if(counts[c]!==undefined)counts[c]++;});
+  });
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  if(total===0){
+    panel.innerHTML=`<div class="cause-dist-title">Causality Distribution</div>
+      <p style="font-size:10px;color:var(--muted);margin:0;">Log incidents with causality categories to see distribution.</p>
+      <div class="halcyon-note">Reference: Pawlicki et al. 2019 (STPA, Halcyon) found <span>73% non-technical</span> causality in RT.</div>`;
+    return;
+  }
+  let bars='';
+  Object.entries(CAUSES).forEach(([code,info])=>{
+    const pct=total>0?Math.round(counts[code]/total*100):0;
+    bars+=`<div class="cause-bar-row">
+      <div class="cause-bar-label" style="color:${info.color};font-size:9px;">${info.label.split(' ')[0]}</div>
+      <div class="cause-bar-wrap"><div class="cause-bar-fill" style="width:${pct}%;background:${info.bar};"></div></div>
+      <div class="cause-bar-val">${pct}%</div>
+    </div>`;
+  });
+  const techPct=total>0?Math.round((counts.TECH)/total*100):0;
+  const nonTechPct=100-techPct;
+  panel.innerHTML=`<div class="cause-dist-title">Causality Distribution (${db.incidents.length} incidents)</div>
+    ${bars}
+    <div class="halcyon-note">Your data: <span>${nonTechPct}% non-technical</span> ·
+    Halcyon benchmark (Pawlicki 2019): <span>73% non-technical</span></div>`;
+}
+
+function onEventTypeChange(){
+  const et=document.getElementById('i-event-type').value;
+  const sevFg=document.getElementById('severity-fg');
+  sevFg.style.display=(et==='incident')?'block':'none';
+  if(et!=='incident'){
+    document.getElementById('i-severity').value='';
+    document.getElementById('cast-panel').style.display='none';
+  } else {
+    // Re-check severity to potentially show CAST
+    onSeverityChange();
+  }
+}
+
+function onSeverityChange(){
+  const et=document.getElementById('i-event-type').value;
+  const sev=document.getElementById('i-severity').value;
+  const hasCastData=document.getElementById('cast-constraint')&&
+    document.getElementById('cast-constraint').value.trim().length>0;
+  const showCast=hasCastData||
+    ((et==='incident')&&(sev==='Significant (patient affected)'||sev==='Serious (harm occurred)'));
+  document.getElementById('cast-panel').style.display=showCast?'block':'none';
+}
+
+/* ═══════════════════════════════════════════════════════
+   TG-100 FMEA TEMPLATES
+═══════════════════════════════════════════════════════ */
+function buildTG100Templates(){
+  const today=new Date().toISOString().slice(0,10);
+  return [
+  {id:'TG100_SIM',name:'CT Simulation (TG-100)',dept:'Radiation Oncology',
+   facilitator:'TG-100 Template',date:today,version:'v1.0',tg100Key:'sim',isTG100:true,items:[
+    {id:'FS01',step:'Patient ID & Scheduling',mode:'Wrong patient simulated',
+     effect:'Incorrect anatomy, position, isocenter; entire plan built on wrong patient',
+     s:9,cause:'Verbal 2-ID only; no barcode scan',o:1,controls:'Verbal 2-ID; photo in scheduling',d:2,rpn:18,
+     action:'Electronic wristband scan before setup',responsible:'Chief Therapist',due:'',status:'Open'},
+    {id:'FS02',step:'Immobilization & Positioning',mode:'Non-reproducible immobilization device',
+     effect:'Inter-fraction setup variability exceeds PTV margin',
+     s:7,cause:'No site-specific SOP for device selection',o:4,controls:'Sim sheet; first-fraction physicist review',d:4,rpn:112,
+     action:'Site-specific immobilization SOP with physics sign-off',responsible:'Physics/RTT Lead',due:'',status:'Open'},
+    {id:'FS03',step:'Isocenter Marking',mode:'Tattoos placed at incorrect isocenter',
+     effect:'Systematic positional offset every fraction',
+     s:9,cause:'Laser alignment error; single-person task',o:2,controls:'Two RTTs; coordinates on sim sheet',d:3,rpn:54,
+     action:'Mandatory second-check before tattooing; two signatures',responsible:'Chief Therapist',due:'',status:'Open'},
+    {id:'FS04',step:'CT Acquisition',mode:'Scan length insufficient — anatomy truncated',
+     effect:'Missing structures; incorrect dose calculation or OAR assessment',
+     s:7,cause:'Default range not site-specific',o:3,controls:'Physician prescribes parameters',d:3,rpn:63,
+     action:'Site-specific protocols locked in scanner',responsible:'Dosimetry Lead',due:'',status:'Open'},
+    {id:'FS05',step:'CT Acquisition',mode:'Wrong protocol — incorrect slice thickness or FOV',
+     effect:'Degraded image quality; poor contouring; incorrect heterogeneity correction',
+     s:6,cause:'Default protocol selected; worklist mismatch',o:3,controls:'Protocol name on sim order',d:4,rpn:72,
+     action:'Protocol name must match sim order; TPS flags mismatches',responsible:'Physicist',due:'',status:'Open'},
+    {id:'FS06',step:'Image Transfer',mode:'DICOM transfer failure',
+     effect:'Delayed planning; risk of plan on incorrect image set',
+     s:8,cause:'Network timeout; wrong DICOM destination',o:2,controls:'Dosimetrist confirms images',d:3,rpn:48,
+     action:'Automated DICOM receipt confirmation; failure alert to physics',responsible:'IT/Physics',due:'',status:'Open'},
+  ]},
+  {id:'TG100_PLANNING',name:'Treatment Planning (TG-100)',dept:'Radiation Oncology',
+   facilitator:'TG-100 Template',date:today,version:'v1.0',tg100Key:'planning',isTG100:true,items:[
+    {id:'FP01',step:'Prescription Import',mode:'Incorrect dose or fractionation in TPS',
+     effect:'Wrong total dose or dose/fraction; severe toxicity or underdosing',
+     s:10,cause:'Manual transcription; no system interlock',o:2,controls:'Dosimetrist transcribes; physicist verifies',d:3,rpn:60,
+     action:'Direct electronic Rx import from EMR to TPS',responsible:'Informatics/Dosimetry',due:'',status:'Open'},
+    {id:'FP02',step:'Target Structure Selection',mode:'Wrong target structure used (mislabeled)',
+     effect:'Dose optimized to incorrect volume',
+     s:9,cause:'Non-standard naming; multiple plan iterations',o:3,controls:'Physics chart review',d:3,rpn:81,
+     action:'Enforce TG-263 naming; TPS auto-flags mismatches',responsible:'Chief Dosimetrist',due:'',status:'Open'},
+    {id:'FP03',step:'Beam Arrangement',mode:'Beam path through prohibited OAR',
+     effect:'Unplanned dose to critical structure; avoidable toxicity',
+     s:7,cause:'No OAR avoidance interlock; no beam path review requirement',o:4,controls:'DVH review; physicist check',d:3,rpn:84,
+     action:'Mandatory beam path review; OAR constraints imported from Rx',responsible:'Dosimetrist/Physicist',due:'',status:'Open'},
+    {id:'FP04',step:'Dose Calculation',mode:'Heterogeneity correction disabled',
+     effect:'Systematic calculation error',
+     s:8,cause:'Algorithm not saved in site template',o:2,controls:'Physicist verifies algorithm in chart check',d:3,rpn:48,
+     action:'Lock calculation algorithm per site template',responsible:'Physics',due:'',status:'Open'},
+    {id:'FP05',step:'Plan Transfer to R&V',mode:'Non-approved plan version exported',
+     effect:'Outdated plan delivered to patient',
+     s:9,cause:'Multiple TPS versions; export not gated on approval',o:2,controls:'Plan approval required; RTT verifies name',d:3,rpn:54,
+     action:'Export gated on Approved status; hard interlock',responsible:'Physicist/IT',due:'',status:'Open'},
+    {id:'FP06',step:'Plan Transfer to R&V',mode:'Parameters differ between TPS and R&V',
+     effect:'R&V delivers wrong MU, energy, field size, or angle',
+     s:9,cause:'Manual R&V entry; DICOM mapping errors',o:2,controls:'Double-check at first fraction',d:2,rpn:36,
+     action:'Automated TPS→R&V transfer with integrity verification',responsible:'Medical Physics',due:'',status:'Open'},
+  ]},
+  {id:'TG100_QA',name:'Plan QA & Physics Review (TG-100)',dept:'Medical Physics',
+   facilitator:'TG-100 Template',date:today,version:'v1.0',tg100Key:'qa',isTG100:true,items:[
+    {id:'FQ01',step:'Independent MU Check',mode:'Secondary check on wrong plan version',
+     effect:'MU check passes for unmatched plan',
+     s:9,cause:'Multiple plan files; filename inconsistency',o:2,controls:'Physicist records plan name and date',d:3,rpn:54,
+     action:'Secondary check references plan UID not filename',responsible:'Physics',due:'',status:'Open'},
+    {id:'FQ02',step:'Independent MU Check',mode:'Systematic error in secondary calculation software',
+     effect:'Consistent wrong MU across all patients undetected',
+     s:8,cause:'Commissioning data not updated after beam adjustment',o:2,controls:'Annual validation vs TPS benchmarks',d:4,rpn:64,
+     action:'Quarterly validation; linked to machine QA calendar',responsible:'Chief Physicist',due:'',status:'Open'},
+    {id:'FQ03',step:'Patient-Specific QA',mode:'Gamma failure accepted without documented review',
+     effect:'Delivery error in patient plan unidentified',
+     s:9,cause:'Threshold set without clinical justification; workload pressure override',o:2,controls:'Written QA policy; physicist sign-off',d:3,rpn:54,
+     action:'Threshold failure triggers mandatory formal review; no silent override',responsible:'Physics/QA',due:'',status:'Open'},
+    {id:'FQ04',step:'Patient-Specific QA',mode:'QA performed for wrong plan version',
+     effect:'Approved plan never verified',
+     s:9,cause:'QA on backup plan; UID not cross-checked',o:2,controls:'Physicist initials plan name on QA report',d:3,rpn:54,
+     action:'QA software displays plan UID; physicist confirms match',responsible:'Physics',due:'',status:'Open'},
+    {id:'FQ05',step:'Physics Chart Review',mode:'Rx–plan discrepancy not identified',
+     effect:'Patient treated with plan not matching physician intent',
+     s:10,cause:'Unstructured review; cognitive saturation; no mandatory field list',o:2,controls:'Physicist reviews plan prior to first treatment',d:3,rpn:60,
+     action:'Mandatory structured chart check form; required fields enforced',responsible:'Chief Physicist',due:'',status:'Open'},
+    {id:'FQ06',step:'Physics Chart Review',mode:'OAR constraint violation not flagged',
+     effect:'Patient treated exceeding OAR tolerance',
+     s:9,cause:'Constraints not prospectively loaded into review form',o:3,controls:'Physicist reviews DVH; constraints in Rx document',d:3,rpn:81,
+     action:'OAR constraints pulled from Rx into review form; pass/fail flagging',responsible:'Dosimetry/Physics',due:'',status:'Open'},
+  ]},
+  {id:'TG100_DELIVERY',name:'Treatment Delivery (TG-100)',dept:'Radiation Therapy',
+   facilitator:'TG-100 Template',date:today,version:'v1.0',tg100Key:'delivery',isTG100:true,items:[
+    {id:'FD01',step:'Patient Identification',mode:'Wrong patient treated',
+     effect:'Wrong site, dose, fractionation — catastrophic wrong-patient event',
+     s:10,cause:'Verbal ID only; wristband not scanned',o:1,controls:'Verbal 2-identifier; photo in R&V; wristband policy',d:2,rpn:20,
+     action:'Electronic barcode scan before room entry; visual photo alert on console',responsible:'Chief Therapist',due:'',status:'Open'},
+    {id:'FD02',step:'Pre-Treatment Timeout',mode:'Timeout checklist skipped under schedule pressure',
+     effect:'Setup or plan error proceeds to delivery; last safety barrier bypassed',
+     s:9,cause:'No hard interlock; perceived as optional; no leadership enforcement culture',o:4,controls:'Paper checklist; verbal attestation',d:5,rpn:180,
+     action:'Electronic checklist with mandatory completion interlock before beam-on; medical director mandate',responsible:'Medical Director + Chief Therapist',due:'',status:'Open'},
+    {id:'FD03',step:'IGRT Acquisition & Review',mode:'CBCT not acquired or not reviewed',
+     effect:'Undetected setup error proceeds; dose to incorrect anatomy',
+     s:8,cause:'IGRT frequency not enforced; left to RTT discretion',o:3,controls:'IGRT policy; physicist weekly trend review',d:3,rpn:72,
+     action:'Site-specific mandatory IGRT frequency as R&V hard requirement',responsible:'Physics/Chief Therapist',due:'',status:'Open'},
+    {id:'FD04',step:'Couch Setup & IGRT Shift',mode:'Couch shift applied in wrong direction',
+     effect:'Patient positioned further from target; systematic error until identified',
+     s:8,cause:'Shift direction convention confusion; non-intuitive R&V UI',o:3,controls:'Second RTT confirms shift direction',d:4,rpn:96,
+     action:'Directional shift SOP with visual aid at console; annual RTT competency',responsible:'Chief Therapist/Physics',due:'',status:'Open'},
+    {id:'FD05',step:'Treatment Delivery',mode:'Interrupted treatment resumed with wrong field',
+     effect:'Fraction partially delivered twice, or fields skipped',
+     s:8,cause:'No standardized interruption-resumption protocol',o:3,controls:'R&V records MU; physicist reviews weekly',d:4,rpn:96,
+     action:'Formal interruption-resumption SOP; RTT contacts physicist before resuming',responsible:'Chief Therapist/Physics',due:'',status:'Open'},
+    {id:'FD06',step:'In-Vivo Dosimetry',mode:'In-vivo alarm exceeded but delivery continued',
+     effect:'Significant dose error without clinical intervention',
+     s:9,cause:'Action threshold not defined; alarm perceived as nuisance',o:2,controls:'In-vivo system installed; alarms logged',d:4,rpn:72,
+     action:'Written in-vivo alarm response SOP; stop-treatment trigger; physicist notification',responsible:'Physics',due:'',status:'Open'},
+  ]},
+  ];
+}
+
+/* ═══════════════════════════════════════════════════════
+   BUILT-IN PROCESS MAP
+═══════════════════════════════════════════════════════ */
+const BUILTIN_MAP={
+  id:'BUILTIN_RT',name:'External Beam RT — Standard Workflow',
+  desc:'Full radiation oncology treatment chain. Basis for TG-100 FMEA. In STAMP terms, each step is a control action performed by a controller.',
+  isBuiltIn:true,
+  lanes:['Physician','Dosimetrist','Physicist','Radiation Therapist'],
+  steps:[
+    {id:'B01',col:1,lane:'Physician',label:'Consult &\nRx Intent',tg100Key:null,
+     desc:'Initial consultation, diagnosis review, and treatment intent. Physician establishes goals of care and documents the prescription.',
+     stpa:'The Radiation Oncologist is the top-level controller for treatment prescription. Control actions: write Rx, set dose constraints. Unsafe control: Rx written with wrong fractionation, wrong site, or before adequate workup.'},
+    {id:'B02',col:2,lane:'Physician',label:'Simulation\nOrder',tg100Key:'sim',
+     desc:'Physician writes simulation order: site, position, motion management, immobilization, contrast, and special instructions.',
+     stpa:'Control action: prescribe simulation parameters. Unsafe conditions include: order written too late (time pressure), with incomplete patient information, or with ambiguous immobilization instruction.'},
+    {id:'B03',col:2,lane:'Radiation Therapist',label:'CT\nSimulation',tg100Key:'sim',
+     desc:'RTT positions patient per order, applies immobilization, acquires CT, marks isocenter with tattoos and radiopaque markers.',
+     stpa:'RTT is the controller; CT scanner and patient are controlled processes. Key UCAs: tattoos placed before isocenter confirmed; CT acquired before patient is correctly positioned; immobilization device selected without protocol guidance.'},
+    {id:'B04',col:2,lane:'Dosimetrist',label:'Image Import\n& Setup',tg100Key:'sim',
+     desc:'DICOM transfer to TPS; verify patient demographics and image integrity; create initial structure set.',
+     stpa:'Dosimetrist controls TPS data integrity. UCA: images imported for wrong patient; transfer failure not detected; structure set created without confirming image completeness.'},
+    {id:'B05',col:3,lane:'Physician',label:'Target\nContouring',tg100Key:'contour',
+     desc:'Physician delineates GTV and CTV; may use image fusion. Documents margin rationale for PTV expansion.',
+     stpa:'Oncologist controls target definition — the highest-consequence control action in the workflow. UCAs: contour drawn on wrong CT series; OAR proximity not considered; prescription margins applied inconsistently.'},
+    {id:'B06',col:3,lane:'Dosimetrist',label:'OAR\nContouring',tg100Key:'contour',
+     desc:'Dosimetrist contours organs-at-risk; atlas or AI-based segmentation may assist. Physician reviews and approves.',
+     stpa:'Dosimetrist controls OAR definition; physician provides oversight feedback. UCAs: OAR contour started before target approved; auto-segmentation accepted without review (over-reliance on AI — a key FMEA failure mode).'},
+    {id:'B07',col:4,lane:'Dosimetrist',label:'Treatment\nPlanning',tg100Key:'planning',
+     desc:'Dosimetrist creates beam arrangement, runs optimization, evaluates DVH against prescription constraints.',
+     stpa:'Dosimetrist controls plan optimization. UCAs: plan optimized to wrong structure; wrong prescription loaded; dose algorithm changed without documentation; plan transferred before physician review.'},
+    {id:'B08',col:5,lane:'Physicist',label:'Physics\nChart Review',tg100Key:'qa',
+     desc:'Independent physics review: Rx match, MU, dose normalization, constraint compliance, plan transfer integrity.',
+     stpa:'Physicist provides independent verification control loop. Process model flaw: physicist assumes plan was correctly transferred without checking UID. Contextual factor: cognitive saturation from high review volume — identified in Halcyon STPA.'},
+    {id:'B09',col:5,lane:'Physician',label:'Plan\nApproval',tg100Key:'qa',
+     desc:'Physician reviews and approves final treatment plan. Documents informed consent.',
+     stpa:'Physician final approval = a critical control gate. UCA: approval given without reviewing DVH; approval under time pressure skips constraint verification. Feedback path: physicist findings must reach physician before approval.'},
+    {id:'B10',col:6,lane:'Physicist',label:'Patient-\nSpecific QA',tg100Key:'qa',
+     desc:'IMRT/VMAT measurement QA; gamma analysis; secondary MU check; plan transfer verification to R&V.',
+     stpa:'Physicist verifies machine delivery matches plan. UCA: QA performed on wrong plan version (process model flaw); gamma failure accepted without documented review (inadequate control response to feedback).'},
+    {id:'B11',col:7,lane:'Radiation Therapist',label:'Pre-Tx\nTimeout',tg100Key:'delivery',
+     desc:'Two-patient-ID verification, site and plan ID confirmation, immobilization check. Must complete before beam-on.',
+     stpa:'RTT team performs last-line safety control. RPN 180 in FMEA. UCA: timeout skipped under schedule pressure. Contextual factor: no system hard-stop. Pawlicki 2019: organizational management (33%) and procedural issues (23%) are the dominant causality categories — this step is where both converge.'},
+    {id:'B12',col:7,lane:'Physicist',label:'1st Fraction\nPhysicist',tg100Key:'delivery',
+     desc:'Physicist present for 1st fraction: CBCT review, setup approval, IGRT shift authorization.',
+     stpa:'Physicist online review is a critical control loop closure. UCA: physicist approves CBCT without adequate review time; IGRT shift applied in wrong direction (process model flaw about coordinate convention).'},
+    {id:'B13',col:7,lane:'Radiation Therapist',label:'Treatment\nDelivery',tg100Key:'delivery',
+     desc:'RTT delivers each fraction: patient setup, IGRT acquisition and review, couch shift, beam-on, in-vivo monitoring.',
+     stpa:'RTT controls daily delivery. Multiple UCAs: treatment resumed after interruption without physicist contact; in-vivo alarm exceeded but delivery continued (no defined response pathway = absent feedback response).'},
+    {id:'B14',col:7,lane:'Physician',label:'Weekly\nOncology Review',tg100Key:'delivery',
+     desc:'Weekly on-treatment visit: acute toxicity, response, setup trends, patient-reported outcomes.',
+     stpa:'Physician provides on-treatment feedback to re-examine safety constraints. UCA: visit skipped due to scheduling; IGRT trend showing systematic offset not communicated back to physics.'},
+    {id:'B15',col:8,lane:'Physician',label:'End of Tx\nSummary',tg100Key:null,
+     desc:'Treatment summary: total dose, fractions, deviations, response, follow-up schedule.',
+     stpa:'Closure of the treatment control loop. Deviations documented here feed back into ILS for system learning.'},
+  ],
+  edges:[['B01','B02'],['B02','B03'],['B03','B04'],['B04','B05'],
+    ['B05','B06'],['B06','B07'],['B07','B08'],['B08','B09'],
+    ['B09','B10'],['B10','B11'],['B11','B12'],['B12','B13'],
+    ['B13','B14'],['B13','B15']]
+};
+
+/* ═══════════════════════════════════════════════════════
+   DATABASE
+═══════════════════════════════════════════════════════ */
+const SK='SafetyOS_v9';
+let db={incidents:[],fmea:[],policies:[],huddles:[],processMaps:[]};
+let curFmeaId=null,curMapId=null,pmModalLanes=[];
+
+function loadDB(){
+  try{const s=localStorage.getItem(SK);
+    if(s){const p=JSON.parse(s);
+      db.incidents=p.incidents||[];db.fmea=p.fmea||[];
+      db.policies=p.policies||[];db.huddles=p.huddles||[];
+      db.processMaps=p.processMaps||[];}}catch(e){console.warn(e);}
+}
+function saveDB(){localStorage.setItem(SK,JSON.stringify(db));updateBar();}
+function updateBar(){
+  document.getElementById('db-count').textContent=
+    db.incidents.length+' incidents · '+db.fmea.length+' FMEA · '+
+    db.policies.length+' policies';
+}
+
+/* ═══════════════════════════════════════════════════════
+   CSV SYNC
+═══════════════════════════════════════════════════════ */
+function startFresh(){
+  loadDB();document.getElementById('sync-overlay').style.display='none';
+  if(!db.incidents.length&&!db.fmea.length&&!db.policies.length&&!db.processMaps.length)seedDemo();
+  refreshAll();updateBar();
+}
+function triggerCSVLoad(){document.getElementById('csv-file-in').click();}
+function parseCSVFile(ev){
+  const file=ev.target.files[0];if(!file)return;
+  const r=new FileReader();
+  r.onload=e=>{
+    try{
+      const p=importCSV(e.target.result);
+      ['incidents','fmea','policies','huddles','processMaps'].forEach(k=>{if(p[k])db[k]=p[k];});
+      saveDB();document.getElementById('sync-overlay').style.display='none';
+      refreshAll();alert('Loaded: '+file.name);
+    }catch(err){alert('CSV parse error: '+err.message);}
+  };
+  r.readAsText(file);ev.target.value='';
+}
+function importCSV(text){
+  const lines=text.split('\n');
+  const res={incidents:[],fmea:[],policies:[],huddles:[],processMaps:[]};
+  let sec=null,hdrs=[];
+  for(const raw of lines){
+    const line=raw.trim();if(!line)continue;
+    if(line.startsWith('##SECTION:')){sec=line.slice(10);hdrs=[];continue;}
+    if(!sec)continue;
+    if(!hdrs.length){hdrs=csvLine(line);continue;}
+    const vals=csvLine(line);const obj={};
+    hdrs.forEach((h,i)=>obj[h]=vals[i]||'');
+    if((sec==='fmea'||sec==='processMaps')&&obj.json){
+      try{const parsed=JSON.parse(obj.json);Object.assign(obj,parsed);}catch{}delete obj.json;}
+    if(res[sec])res[sec].push(obj);
+  }
+  return res;
+}
+function csvLine(line){
+  const res=[];let cur='',q=false;
+  for(const c of line){if(c==='"')q=!q;else if(c===','&&!q){res.push(cur);cur='';}else cur+=c;}
+  res.push(cur);return res;
+}
+function exportCSV(){
+  let out='';
+  const sec=(name,rows,hdrs,fn)=>{out+=`##SECTION:${name}\n${hdrs.join(',')}\n`;rows.forEach(r=>out+=fn(r)+'\n');out+='\n';};
+  sec('incidents',db.incidents,
+    ['id','when','where','who','what','why','w1','w2','w3','w4','w5','rootCause','action','severity',
+     'status','stepLink','causality','linkedPolicies','cast_json','timestamp'],
+    r=>[r.id,q(r.when),q(r.where),q(r.who),q(r.what),q(r.why),q(r.w1),q(r.w2),q(r.w3),q(r.w4),
+        q(r.w5),q(r.rootCause),q(r.action),q(r.severity),q(r.status),q(r.stepLink||''),
+        q((r.causality||[]).join('|')),q((r.linkedPolicies||[]).join('|')),
+        q(JSON.stringify(r.cast||{})),q(r.timestamp)].join(','));
+  sec('fmea',db.fmea,['id','json'],r=>[r.id,q(JSON.stringify(r))].join(','));
+  sec('policies',db.policies,
+    ['id','name','file','dept','version','effective','nextReview','owner','status','auditNotes','lastAudit'],
+    r=>[r.id,q(r.name),q(r.file),q(r.dept),q(r.version),q(r.effective),q(r.nextReview),
+        q(r.owner),q(r.status),q(r.auditNotes),q(r.lastAudit)].join(','));
+  sec('huddles',db.huddles,['id','date','attendees','tomorrow','actions','timestamp'],
+    r=>[r.id,q(r.date),q(r.attendees),q(r.tomorrow),q(r.actions),q(r.timestamp)].join(','));
+  sec('processMaps',db.processMaps,['id','json'],r=>[r.id,q(JSON.stringify(r))].join(','));
+  const blob=new Blob([out],{type:'text/csv'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download='SafetyOS_Backup_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+}
+function q(v){return'"'+String(v==null?'':v).replace(/"/g,'""')+'"';}
+
+/* ═══════════════════════════════════════════════════════
+   SEED DEMO
+═══════════════════════════════════════════════════════ */
+function seedDemo(){
+  const yDT=new Date(Date.now()-86400000).toISOString().slice(0,16);
+  db.incidents.push({
+    id:'ILS001',when:yDT,where:'Vault 2 — TrueBeam',who:'RTT Jane Smith',
+    what:'Wrong treatment field delivered — incorrect plan loaded in R&V during morning setup.',
+    why:'Plan selected without completing pre-treatment timeout checklist.',
+    w1:'Pre-treatment timeout was not completed',
+    w2:'Staff felt time pressure from extended schedule backlog',
+    w3:'No recent re-training on timeout procedure',
+    w4:'Competency renewal has no scheduled refresh cycle',
+    w5:'Training governance lacks periodic procedural reassessment policy',
+    rootCause:'Absence of mandated competency verification program for critical pre-treatment safety procedures',
+    action:'Quarterly timeout audits; Physics QA Lead as owner; brief RT staff within 2 weeks.',
+    severity:'',eventType:'near_miss',status:'Action Pending',stepLink:'B11',
+    causality:['ORG','PROC'],
+    cast:{},
+    timestamp:new Date().toISOString()
+  });
+  db.incidents.push({
+    id:'ILS002',when:new Date(Date.now()-172800000).toISOString().slice(0,16),
+    where:'CT Sim Suite',who:'Dosimetrist Mark Chen',
+    what:'DICOM transfer failure — CT images not received in TPS. Planning delayed 4 hours.',
+    why:'Network timeout; no automated receipt confirmation system.',
+    w1:'No automated confirmation that DICOM reached TPS',
+    w2:'Network failure went undetected for 4 hours',
+    w3:'No monitoring system for DICOM transfer completion',
+    w4:'IT infrastructure monitoring does not include DICOM pathways',
+    w5:'No system-level requirement for DICOM transfer reliability in QM program',
+    rootCause:'Absence of automated DICOM transfer monitoring and alerting infrastructure',
+    action:'Implement automated DICOM receipt confirmation; failure generates immediate alert.',
+    severity:'Minor (no patient impact)',eventType:'incident',status:'Action Pending',stepLink:'B04',
+    causality:['TECH','ORG'],cast:{},timestamp:new Date().toISOString()
+  });
+  db.incidents.push({
+    id:'ILS003',when:new Date(Date.now()-259200000).toISOString().slice(0,16),
+    where:'TPS Workstation',who:'Senior Dosimetrist',
+    what:'Wrong structure used for plan optimization — PTV_Boost selected instead of PTV_Primary for 12-fraction palliative plan.',
+    why:'Multiple PTV structures with similar names in TPS; non-standard naming convention.',
+    w1:'Non-standard structure naming in TPS',
+    w2:'No TG-263 naming convention enforced',
+    w3:'Structure naming policy not updated when TPS was upgraded',
+    w4:'P&P review cycle did not flag this gap',
+    w5:'No governance mechanism for tracking TPS-specific procedural requirements',
+    rootCause:'Absence of TG-263 structure naming enforcement and linked policy governance',
+    action:'Enforce TG-263 naming via TPS template; update structure naming P&P.',
+    severity:'Significant (patient affected)',eventType:'incident',status:'Open',stepLink:'B07',
+    causality:['PROC','ORG','HB'],
+    cast:{
+      constraint:'Treatment shall be planned and delivered to the correct, explicitly named target volume as specified in the physician prescription.',
+      rtt_c:'',rtt_m:'',rtt_x:'',
+      phys_c:'Chart check did not flag incorrect structure selection',
+      phys_m:'Assumed dosimetrist had used correct structure based on plan name',
+      phys_x:'High review volume; no structured field for structure-Rx match in chart check form',
+      dosi_c:'Selected PTV_Boost from dropdown without verifying against Rx',
+      dosi_m:'Both structures were valid PTVs; name difference not obviously linked to different prescriptions',
+      dosi_x:'Multiple open plans for different patients; cognitive load from simultaneous workload',
+      mgmt_c:'Did not enforce TG-263 naming policy; no audit mechanism',
+      mgmt_m:'Assumed existing TPS naming was adequate',
+      mgmt_x:'TPS upgrade occurred without structured policy review',
+      equip_c:'TPS allows any structure to be selected without cross-checking prescription',
+      equip_m:'',equip_x:'No system-level interlock on structure-Rx consistency',
+      systemic:'Absence of system-level structure naming governance (TG-263) combined with no TPS-enforced structure-prescription cross-check creates a latent failure mode present in every planning workflow.',
+      intervention:'Mandate TG-263 naming department-wide; implement TPS template that pre-populates structure names from Rx; add structure-Rx match as required field in physics chart check form.'
+    },
+    timestamp:new Date().toISOString()
+  });
+  // ── PAPER EXAMPLE 1 ──────────────────────────────────────────────────────
+  // Removed from seed — use "Load Literature Examples" button in Risk Assessment tab or ILS sidebar
+  // Source: Wong & Pawlicki, JACMP 2025 / Silvis-Cividjian et al., Safety Science 2020 / Pawlicki et al., Med Phys 2019
+
+  // Literature examples are loaded via loadLiteratureExamples() button — not seeded automatically.
+
+  db.policies.push(
+    {id:'PP001',name:'SRS/SBRT Treatment Delivery Procedure',file:'SRS_SBRT_Delivery_v4.docx',
+     dept:'Radiation Oncology',version:'v4.0',effective:'2023-06-01',nextReview:'2024-06-01',
+     owner:'Chief Physicist',status:'Active',auditNotes:'',lastAudit:''},
+    {id:'PP002',name:'Daily Machine QA Protocol',file:'Daily_Machine_QA_v2.docx',
+     dept:'Medical Physics',version:'v2.1',effective:'2023-01-15',nextReview:'2024-01-15',
+     owner:'QA Lead Physicist',status:'Active',auditNotes:'',lastAudit:''},
+    {id:'PP003',name:'Patient Identification — RT',file:'Patient_ID_RT_v3.docx',
+     dept:'Radiation Therapy',version:'v3.0',effective:'2022-11-01',nextReview:'2023-11-01',
+     owner:'Chief Therapist',status:'Outdated',
+     auditNotes:'Pending update for biometric badge and EMR integration.',lastAudit:'2023-10-15'},
+    {id:'PP004',name:'Incident Reporting & Learning System Policy',file:'ILS_Policy_v1.docx',
+     dept:'Quality & Safety',version:'v1.0',effective:'2024-01-01',nextReview:'2025-01-01',
+     owner:'Safety Officer',status:'Active',auditNotes:'',lastAudit:''},
+    {id:'PP005',name:'CT Simulation Procedure',file:'CT_Sim_Procedure_v5.docx',
+     dept:'Radiation Oncology',version:'v5.2',effective:'2023-09-01',nextReview:'2024-09-01',
+     owner:'Chief Dosimetrist',status:'Under Review',
+     auditNotes:'Updated immobilization device library pending.',lastAudit:'2024-01-10'}
+  );
+  saveDB();
+  // Seed literature examples silently alongside demo data
+  loadLiteratureExamples(true);
+}
+
+/* ═══════════════════════════════════════════════════════
+   LITERATURE EXAMPLES LOADER
+═══════════════════════════════════════════════════════ */
+function loadLiteratureExamples(silent=false){
+  let addedInc=0, addedFmea=0;
+
+  // ── LIT001 — Rectal cancer isocenter error ──────────────────────────────
+  // Wong & Pawlicki JACMP 2025 — the main case study, analyzed with all 4 methods
+  if(!db.incidents.find(i=>i.id==='LIT001')){
+    db.incidents.push({
+      id:'LIT001',
+      when:new Date(Date.now()-432000000).toISOString().slice(0,16),
+      where:'Radiation Therapy Treatment Room',
+      who:'RTT Team (reported post-fraction 1)',
+      what:'Rectal cancer patient treated with isocenter 10 cm superior to intended location on fraction 1. Patient refused standard tattoo; a Tegaderm over a temporary marker was used. Isocenter recorded relative to tip of coccyx (TOC) at simulation, but treatment chart incorrectly referenced the standard marker. Expedited start required a different planner unfamiliar with the nonstandard setup. Pretreatment check passed. Setup was performed based on the temporary marker, not the TOC. Discovered after post-treatment verification x-ray review.',
+      why:'Two concurrent problems: ambiguous landmark documentation due to nonstandard simulation, and time-pressured handoff to unfamiliar planner who introduced a documentation error.',
+      w1:'Isocenter setup was based on Tegaderm marker, not the recorded TOC landmark',
+      w2:'Treatment chart incorrectly referenced standard marker instead of TOC',
+      w3:'Different planner took over under time pressure without adequate simulation handoff',
+      w4:'No standardized procedure for documenting nonstandard isocenter positioning aids',
+      w5:'No policy requiring verification of landmark consistency between simulation and planning for nonstandard cases',
+      rootCause:'Absent institutional procedure for nonstandard isocenter positioning documentation and cross-check between simulation and treatment planning when standard tattoo is refused.',
+      action:'1) Develop explicit policy for nonstandard isocenter positioning with mandatory physicist sign-off and dual documentation. 2) Require simulation RTT and planning RTT joint briefing when patient handoff occurs under time pressure. 3) Add isocenter landmark type as mandatory verified field in physics chart review.',
+      severity:'Serious (harm occurred)',eventType:'incident',status:'Closed',stepLink:'B03',
+      causality:['ORG','PROC','HB'],
+      cast:{
+        constraint:'Treatment shall be delivered with the beam positioned at the isocenter landmark explicitly documented and verified to match between the simulation record and the treatment chart.',
+        rtt_c:'Positioned patient based on Tegaderm marker; did not question discrepancy between chart (tattoo/TOC reference) and actual positioning aid used.',
+        rtt_m:'Believed beam positioning was based on the Tegaderm. Surface monitoring system indicated patient was within tolerance, assuaging doubt. Pretreatment chart check had passed.',
+        rtt_x:'Patient arrived late. Another urgent ambulance patient arrived simultaneously. Patient\'s family present at console, contributing to inhibition. Time stress and competing demands compromised thoroughness.',
+        phys_c:'Pretreatment chart review did not identify the isocenter landmark documentation error.',
+        phys_m:'Review was performed urgently due to compressed timeline. Assumed standard simulation setup from documentation.',
+        phys_x:'Shortened timeline due to expedited start; planner unfamiliar with patient; no structured landmark verification field in chart review form.',
+        dosi_c:'Planned using standard marker position (tattoo convention) without knowing simulation was done based on TOC. Chart recorded isocenter based on standard convention.',
+        dosi_m:'Not involved in simulation; assumed standard setup from documentation. Did not recognize TOC-based measurement as nonstandard.',
+        dosi_x:'No explicit handoff from simulation RTT. Working from documentation alone under time pressure.',
+        mgmt_c:'No procedure existed for nonstandard isocenter positioning. No policy requiring physicist oversight for such cases. Communication between management and frontline inadequate for nonstandard situations.',
+        mgmt_m:'Existing procedures were assumed adequate; edge cases were not anticipated or protocoled.',
+        mgmt_x:'Institutional policy focused on standard workflows. Nonstandard scenarios not formally addressed.',
+        equip_c:'Surface monitoring system indicated patient was within positional tolerance — providing false reassurance. Field light is not routine due to SGRT adoption, removing a secondary visual verification.',
+        equip_m:'System did not require cross-referencing the active reference surface with the simulation landmark record.',
+        equip_x:'Software update related to surface inactivation was unfamiliar to frontline staff.',
+        systemic:'No institutional mechanism to detect or respond when "process as done" diverges from "process as imagined." Nonstandard simulation setup was not flagged in any system as requiring special downstream handling. The same latent condition (absent policy for nonstandard positioning) had the potential to affect any future nonstandard patient.',
+        intervention:'1) Mandatory physicist sign-off for any nonstandard isocenter positioning. 2) Structured handoff form when simulation and planning are performed by different staff. 3) Landmark type as mandatory verified field in chart review. 4) Staff education on SGRT software updates. 5) Field light verification as supplementary step for nonstandard cases.'
+      },
+      note:'Source: Wong & Pawlicki (JACMP 2025), Section 4 — worked example analyzed with RCA, London Protocol, AcciMap, and CAST. Original incident from Gosbee & Anderson (BMJ 2003). This is the only published RT incident analyzed with all four methods side-by-side.',
+      timestamp:new Date(Date.now()-432000000).toISOString()
+    });
+    addedInc++;
+  }
+
+  // ── LIT002 — Wrong reference surface, SGRT breast patient ───────────────
+  // Wong & Pawlicki JACMP 2025 — the CAST worked example (Section 4.4)
+  if(!db.incidents.find(i=>i.id==='LIT002')){
+    db.incidents.push({
+      id:'LIT002',
+      when:new Date(Date.now()-518400000).toISOString().slice(0,16),
+      where:'Linac Treatment Room — Breast Patient, Fraction 2',
+      who:'RTT (discovered post-treatment)',
+      what:'Breast patient, fraction 2 with tangent fields using surface-guided RT (SGRT). RTT loaded the reference surface and positioned patient. Pre-treatment timeout completed; treatment began. After medial field, RTT noticed longitudinal position differed from acquisition but was within action threshold. Team checked breast board index and incline and proceeded with lateral field. Post-treatment: RTT noticed the SGRT boost reference surface had been open — patient had been positioned to the boost surface, not the primary treatment surface, because it loaded by default after a software update.',
+      why:'SGRT software loaded boost surface by default following a software update. Staff were unfamiliar with the change in surface inactivation behavior. No system interlock prevented beam-on with incorrect reference surface active.',
+      w1:'Boost reference surface was active instead of primary treatment surface',
+      w2:'SGRT software loaded boost surface by default after software update',
+      w3:'Staff not trained on changed surface inactivation behavior',
+      w4:'Software update was not evaluated for clinical workflow impact before deployment',
+      w5:'No institutional process for assessing SGRT software update impact on clinical workflow',
+      rootCause:'Inadequate change management process for SGRT software updates: no systematic clinical impact assessment, no staff training requirement, and no system-level interlock verifying correct active reference surface before beam-on.',
+      action:'1) Mandatory staff briefing for all SGRT software updates affecting surface management. 2) Add "verify active reference surface" to pre-treatment timeout checklist. 3) Vendor enhancement request: alert when non-primary surface active at beam-on. 4) Review all SGRT-related incidents across enterprise for similar pattern.',
+      severity:'Significant (patient affected)',eventType:'incident',status:'Action Pending',stepLink:'B11',
+      causality:['TECH','ORG','PROC'],
+      cast:{
+        constraint:'Treatment delivery shall occur only when the correct, physician-approved reference surface for the current treatment field is active and verified in the SGRT system.',
+        rtt_c:'Loaded reference surface per routine workflow. After noting positional discrepancy, verified the breast board and proceeded — did not consider the possibility of an incorrect reference surface being active.',
+        rtt_m:'Believed active reference surface was correct — system displayed it without warning. Interpreted the small positional discrepancy as a breast board indexing issue, a more familiar explanation.',
+        rtt_x:'SGRT system indicated patient was within tolerance. Recent software update behavior was unfamiliar. No clear troubleshooting protocol for unexpected positional readings.',
+        phys_c:'Not present for this fraction. No physicist review for fractions beyond the first.',
+        phys_m:'N/A for this fraction.',
+        phys_x:'First-fraction physicist policy may not have specified all subsequent fractions. No notification mechanism when delivery occurs with non-primary surface.',
+        dosi_c:'Treatment plan and surfaces were correctly created. Boost surface was appropriately named.',
+        dosi_m:'N/A for delivery.',
+        dosi_x:'The boost surface was a legitimate, correctly created object. The issue was software default behavior, not a plan creation error.',
+        mgmt_c:'Did not establish process to evaluate SGRT software updates for clinical workflow impact. Similar incidents had occurred at other enterprise sites but information was not widely shared.',
+        mgmt_m:'Software updates treated as IT technical events rather than clinical workflow changes requiring training and verification.',
+        mgmt_x:'Organizational structure separated IT software deployment from clinical workflow governance. Inadequate cross-site safety information sharing.',
+        equip_c:'SGRT software loaded boost surface by default after update. No system alert generated when non-primary surface active at beam-on. Vendor software change had clinical workflow implications not communicated adequately.',
+        equip_m:'',
+        equip_x:'Vendor software update changed surface inactivation behavior without adequate clinical notification or training materials.',
+        systemic:'Similar incidents had occurred across multiple enterprise centers, but the information was not widely discussed or acted upon. RTTs lacked clear guidelines to troubleshoot when potential issues were identified during treatment. This is a systemic failure of safety information sharing — a pattern CAST identifies as inadequate feedback flow from frontline to management and across organizational units.',
+        intervention:'1) Cross-enterprise incident sharing mechanism for SGRT issues. 2) Mandatory troubleshooting SOP for unexpected positional readings. 3) Vendor notification requesting software interlock for incorrect active surface. 4) Reference surface verification on timeout checklist.'
+      },
+      note:'Source: Wong & Pawlicki (JACMP 2025), Section 4.4 — the primary CAST worked example in the paper. Key systemic finding: similar incidents at multiple enterprise sites were not shared, preventing system-level learning. Illustrates how CAST surfaces organizational information-sharing failures that RCA misses.',
+      timestamp:new Date(Date.now()-518400000).toISOString()
+    });
+    addedInc++;
+  }
+
+  // ── LIT003 — Plan transferred to R&V before approval ────────────────────
+  // Silvis-Cividjian et al. Safety Science 2020 — STPA UCA 49
+  // Time-related unsafe control action found by STPA, missed by HFMEA
+  if(!db.incidents.find(i=>i.id==='LIT003')){
+    db.incidents.push({
+      id:'LIT003',
+      when:new Date(Date.now()-604800000).toISOString().slice(0,16),
+      where:'Dosimetry / Linac 1 console',
+      who:'RTT at console (caught before treatment)',
+      what:'DICOM RT files transferred to R&V system before the treatment plan received final physicist and physician approval. RTT at console noticed plan status showed "In Review" when setting up the first patient of the morning. Treatment was halted before beam-on. Investigation found the post-planning radiographer had annotated and transferred files at end of shift, misreading the plan status in TPS as complete.',
+      why:'Plan transfer to R&V was not gated on the Approved status in TPS. Post-planning radiographer relied on personal reading of review status — no system interlock enforced the correct sequence.',
+      w1:'DICOM files transferred before plan reached Approved status',
+      w2:'TPS export function was not gated on approval workflow completion',
+      w3:'No system interlock preventing transfer of unapproved plans',
+      w4:'Plan transfer SOP did not require system-verified approval status before export',
+      w5:'Workflow governance did not include approval-gated transfer as a TPS configuration requirement',
+      rootCause:'Absence of a TPS-enforced hard interlock preventing DICOM export of unapproved plans. Policy existed but was not system-enforced — left to individual staff judgment under end-of-shift time pressure.',
+      action:'1) Configure TPS to gate DICOM export on Approved status (hard interlock — highest priority). 2) Add system notification to plan reviewer when transfer is attempted for a plan still under review. 3) Update SOP as secondary defense. 4) Audit all active patient plans in R&V for approval status mismatch.',
+      severity:'',eventType:'near_miss',status:'Closed',stepLink:'B07',
+      causality:['TECH','PROC','ORG'],
+      cast:{
+        constraint:'Treatment plans shall not be transferred to the delivery system (R&V) unless they have received explicit Approved status from both the reviewing physicist and the treating physician.',
+        rtt_c:'Identified the unapproved plan status at the console before treatment commenced. Correctly halted setup and escalated. This is a safety success — the system\'s last line of defense worked.',
+        rtt_m:'Appropriately recognized the unapproved status from the R&V display.',
+        rtt_x:'Morning setup time pressure. RTT was thorough despite this.',
+        phys_c:'Review was not yet complete at time of transfer. No notification was received that transfer had occurred.',
+        phys_m:'Believed plan was still safely within the review workflow.',
+        phys_x:'No system notification sent to reviewer when a plan under review is transferred to R&V.',
+        dosi_c:'Transferred DICOM files at end of shift, misreading plan status as complete.',
+        dosi_m:'Believed physics review had been finalized based on personal reading of TPS status screen. End-of-shift pressure contributed to accepting an ambiguous status as complete.',
+        dosi_x:'TPS status display was ambiguous between "Review in Progress" and "Approved." End-of-day pressure. No feedback from TPS when a plan was transferred without Approved status.',
+        mgmt_c:'No hard interlock was configured in TPS despite technical feasibility. Transfer SOP relied on staff judgment rather than system enforcement.',
+        mgmt_m:'Assumed existing SOP compliance was sufficient. Technical enforcement was not prioritized.',
+        mgmt_x:'TPS configuration was set up without this interlock and was never revisited.',
+        equip_c:'TPS allowed export of unapproved plans without warning. No notification sent to reviewer when transfer occurred.',
+        equip_m:'System designed with export as permissive; approval gating required site-specific configuration.',
+        equip_x:'Default TPS configuration does not enforce approval-gated export — this is a site configuration responsibility that was never exercised.',
+        systemic:'This is Unsafe Control Action 49 from Silvis-Cividjian et al. (2020): "Post-planning radiographer sends DICOM files to treatment delivery before they are approved and complete." It is a time-related UCA — the control action itself is correct, but performed at the wrong time. STPA identified this; HFMEA (which focuses on component failures) missed it entirely. The systemic flaw is that the approval workflow was not enforced by the system, only by policy — and policy compliance degrades under time pressure.',
+        intervention:'Configure TPS export gating on Approved status (technical fix — eliminates the failure mode at the system level). Add system notification to reviewer on transfer attempt. Update SOP as secondary defense.'
+      },
+      note:'Source: Silvis-Cividjian et al. (Safety Science 2020), UCA 49. One of the time-related unsafe control actions found exclusively by STPA — missed by HFMEA because HFMEA focuses on component failures, not on correct actions performed at the wrong time. Demonstrates the specific added value of systems-theoretic hazard analysis.',
+      timestamp:new Date(Date.now()-604800000).toISOString()
+    });
+    addedInc++;
+  }
+
+  // ── Equipment Implementation FMEA — Pawlicki et al. Med Phys 2019 ────────
+  if(!db.fmea.find(p=>p.id==='FMEA_EQUIP')){
+    const today=new Date().toISOString().slice(0,10);
+    db.fmea.push({
+      id:'FMEA_EQUIP',
+      name:'New Technology Implementation & Commissioning',
+      dept:'Medical Physics',
+      facilitator:'Pawlicki et al. 2019 (STPA/Halcyon) Template',
+      date:today,version:'v1.0',tg100Key:null,isTG100:false,
+      note:'Based on: Pawlicki et al. (Med Phys 2019) STPA safety assessment of the Halcyon system. Key finding: 73% of causal scenarios were non-technical (organizational management 33%, procedural 23%, human behavior 14%; technical only 27%). Applies to any new technology introduction: MR-linac, AI contouring, automated planning, new TPS version.',
+      items:[
+        {id:'FE01',step:'Acceptance Testing',mode:'Physicist does not perform acceptance testing before clinical use',
+         effect:'Unverified equipment enters clinical service; unknown performance characteristics used for patient treatment',
+         s:9,cause:'Physicist absent when equipment delivered; department treats without commissioning on vendor assurance; physicist assumed beam was pre-configured (Halcyon causal scenario 2–3, Pawlicki 2019)',
+         o:2,controls:'Institutional policy requiring physicist sign-off before clinical use',d:3,rpn:54,
+         action:'Hard stop: no patient treatment until physicist sign-off completed and documented. Vendor representation is not a substitute for independent commissioning.',
+         responsible:'Chief Physicist',due:'',status:'Open'},
+        {id:'FE02',step:'Commissioning',mode:'Physicist sub-optimally performs commissioning — problem present but not identified',
+         effect:'Equipment with uncorrected performance issue enters clinical service; systematic dosimetric error across all patients',
+         s:9,cause:'Physicist inexperienced and does not choose appropriate tests; too busy with routine clinical work; department does not provide adequate time or equipment; no peer review of commissioning results (causal scenarios 4–7, Pawlicki 2019)',
+         o:2,controls:'Commissioning protocol documentation; physicist sign-off',d:4,rpn:72,
+         action:'Mandatory peer review of all commissioning results by independent physicist. Adequate time allocation must be an institutional commitment, not the physicist\'s personal responsibility to negotiate.',
+         responsible:'Physics Division Chief',due:'',status:'Open'},
+        {id:'FE03',step:'Commissioning Timeline',mode:'Commissioning completed after clinical use begins — problem discovered post-treatment',
+         effect:'Patients treated before equipment fully verified; potential systematic error in early cases',
+         s:8,cause:'Physicist collects data but has no time to analyze before first patient; institutional pressure to start treating on schedule (causal scenario 8, Pawlicki 2019)',
+         o:2,controls:'Policy requiring commissioning sign-off before first patient',d:3,rpn:48,
+         action:'Explicitly define commissioning completion criteria. Clinical start date must be decoupled from equipment delivery date — these are not the same milestone.',
+         responsible:'Medical Director + Chief Physicist',due:'',status:'Open'},
+        {id:'FE04',step:'Staff Training',mode:'Clinical staff undertrained on new system workflow before treating patients',
+         effect:'Unfamiliar workflow causes systematic errors; staff apply old-system assumptions in new-system context',
+         s:8,cause:'Training compressed due to schedule pressure; no competency verification required before independent practice; assumes old-system knowledge transfers directly',
+         o:3,controls:'Vendor training; department orientation',d:4,rpn:96,
+         action:'Structured competency verification before independent practice on new system. Explicitly identify and teach workflow differences from previous system — knowledge transfer is never automatic.',
+         responsible:'Chief Physicist + Chief Therapist',due:'',status:'Open'},
+        {id:'FE05',step:'QA Program Design',mode:'Traditional QA program applied to new system without modification',
+         effect:'System-specific risks not monitored; false safety assurance from passing irrelevant QA tests',
+         s:7,cause:'QA copied from previous system; no systematic review of which tests apply to new architecture; vendor\'s daily check assumed to be sufficient',
+         o:3,controls:'Published QA guidelines; medical physics review',d:3,rpn:63,
+         action:'Perform FMEA or STPA specifically for new system before designing QA program. Pawlicki et al. 2019 found only 27% of Halcyon causal scenarios were technical — a measurements-only QA program addresses only 27% of the risk.',
+         responsible:'Chief Physicist',due:'',status:'Open'},
+        {id:'FE06',step:'AI / Automated Feature Adoption',mode:'Over-reliance on automated or AI-driven output without adequate human review',
+         effect:'Systematic errors in automated output propagate to patient treatment without detection',
+         s:8,cause:'Automation perceived as eliminating review need; workload pressure reduces review thoroughness; staff trust calibration not addressed in training',
+         o:3,controls:'Review requirement in protocol; physicist oversight',d:4,rpn:96,
+         action:'Explicit protocol defining review requirements for AI/automated outputs. Training must address trust calibration — when to accept, when to override. Monitor AI performance with your own institutional data, not only vendor validation data.',
+         responsible:'Physics + Dosimetry Lead',due:'',status:'Open'},
+        {id:'FE07',step:'Organizational Management',mode:'Leadership does not allocate adequate resources for safe implementation',
+         effect:'All downstream failure modes become more likely; safety margins eroded by resource pressure across the entire implementation',
+         s:8,cause:'Revenue pressure to start treating quickly; underestimation of physics time required; staffing shortage not addressed before implementation',
+         o:3,controls:'Business case for implementation timeline',d:5,rpn:120,
+         action:'Formal resource allocation plan required before implementation commitment. Leadership must understand that the majority of new system risks are non-technical — adequately resourcing the physics and training work IS the primary safety intervention.',
+         responsible:'Medical Director + Administration',due:'',status:'Open'},
+      ]
+    });
+    addedFmea++;
+  }
+
+  // ── FMEA: Surface-Guided Cranial Radiosurgery — Manger et al. Med Phys 2015 ─
+  if(!db.fmea.find(p=>p.id==='FMEA_SRS_MANGER')){
+    const today=new Date().toISOString().slice(0,10);
+    db.fmea.push({
+      id:'FMEA_SRS_MANGER',
+      name:'FMEA: Surface-Guided Cranial Radiosurgery (SRS)',
+      dept:'Medical Physics / Radiation Therapy',
+      facilitator:'Manger, Paxton, Pawlicki, Kim — Med Phys 2015',
+      date:today,version:'v1.0',tg100Key:null,isTG100:false,
+      note:'Source: Manger RP, Paxton AB, Pawlicki T, Kim GY. Failure mode and effects analysis and fault tree analysis of surface image guided cranial radiosurgery. Med Phys. 2015;42(5):2449–2461. FMEA applied to cranial SRS workflow using surface guidance system. Failure modes shown here represent the highest-consequence categories from the published analysis. Notable: this paper combined FMEA with fault tree analysis (FTA), enabling both prospective failure mode identification and causal pathway modeling for the highest-RPN items.',
+      items:[
+        {id:'MS01',step:'Patient Identification & Scheduling',
+         mode:'Wrong patient positioned for SRS treatment',
+         effect:'Radiation delivered to wrong patient — catastrophic wrong-patient event with high-dose single-fraction exposure',
+         s:10,cause:'Verbal ID only; no wristband scan; lookalike patients; scheduling overlap; high-throughput day compressing verification steps',
+         o:1,controls:'Two-identifier verbal check; photo in scheduling system; physicist first-fraction review',d:2,rpn:20,
+         action:'Electronic wristband barcode scan required before linac room entry. Photo displayed at console on patient load. System hard-stop if scan not completed.',
+         responsible:'Chief Therapist + IT',due:'',status:'Open'},
+        {id:'MS02',step:'Imaging & Mask Fabrication',
+         mode:'Suboptimal mask fit allowing excessive patient motion during treatment',
+         effect:'Intrafraction motion exceeds SRS geometric tolerance; systematic positional error across entire treatment',
+         s:9,cause:'Mask fabricated under time pressure; patient weight change not accounted for; mask not tested for tolerance before treatment day',
+         o:3,controls:'Physicist reviews setup; SGRT monitors intrafraction motion',d:3,rpn:81,
+         action:'Mandatory mask fit verification with measured immobilization accuracy before first fraction. Protocol: re-fabricate if measured motion exceeds threshold.',
+         responsible:'Chief Therapist + Physics',due:'',status:'Open'},
+        {id:'MS03',step:'Target Localization — Reference Surface',
+         mode:'Incorrect reference surface loaded in SGRT system',
+         effect:'Patient positioned to wrong reference; systematic positional error undetected if within threshold',
+         s:9,cause:'Multiple surfaces in system (treatment vs. QA vs. prior fraction); default load behavior; software update changes surface selection; inadequate verification step',
+         o:3,controls:'Pre-treatment timeout includes surface verification',d:4,rpn:108,
+         action:'Mandatory active reference surface verification in pre-treatment timeout checklist. Surface name displayed prominently at console during positioning. Alert if non-treatment surface is active at beam-on.',
+         responsible:'Chief Therapist + Physics',due:'',status:'Open'},
+        {id:'MS04',step:'Target Localization — CBCT/kV',
+         mode:'Incorrect fusion of CBCT to planning CT — wrong registration',
+         effect:'Systematic isocenter offset for entire SRS treatment; high-dose delivery to wrong anatomy',
+         s:10,cause:'Automated registration fails in complex anatomy; operator accepts suboptimal fusion without physics review; no mandatory physicist confirmation step',
+         o:2,controls:'Physicist reviews fusion; threshold-based action protocol',d:2,rpn:40,
+         action:'Mandatory physicist review and sign-off of all SRS image fusions. Automated fusion accepted only as starting point — visual confirmation required.',
+         responsible:'Physics',due:'',status:'Open'},
+        {id:'MS05',step:'Pre-Treatment Timeout',
+         mode:'Timeout checklist not completed before SRS beam-on',
+         effect:'Setup or localization error proceeds to high-dose delivery — last safety barrier bypassed',
+         s:10,cause:'No electronic interlock; time pressure from subsequent patients; perceived as redundant after CBCT; lack of leadership enforcement',
+         o:3,controls:'Paper checklist; verbal attestation by RTT team',d:5,rpn:150,
+         action:'Electronic timeout system with mandatory completion interlock before SRS beam-on. Medical director mandate. No exceptions policy — SRS is high-consequence single-fraction treatment.',
+         responsible:'Medical Director + Chief Therapist',due:'',status:'Open'},
+        {id:'MS06',step:'SGRT Monitoring — Intrafraction',
+         mode:'SGRT system detects threshold exceedance but treatment is not interrupted',
+         effect:'SRS fraction delivered with patient in incorrect position; dose to critical structures',
+         s:9,cause:'Threshold set too high; alert perceived as nuisance; no defined response protocol; RTT uncertain about action authority',
+         o:2,controls:'SGRT threshold set; physicist defines threshold at simulation',d:3,rpn:54,
+         action:'Written SGRT action threshold SOP: defined thresholds, mandatory beam interruption, physicist notification before resuming. Annual RTT competency on SGRT response.',
+         responsible:'Physics + Chief Therapist',due:'',status:'Open'},
+        {id:'MS07',step:'Plan Delivery — MU Delivery',
+         mode:'Wrong plan delivered — incorrect arc, field, or isocentre parameters loaded in R&V',
+         effect:'Patient treated to unintended anatomy; dose distribution differs from approved plan',
+         s:10,cause:'Multiple SRS plans in system; plan transfer not gated on approval; R&V parameter mismatch not detected; physicist review does not compare UID',
+         o:2,controls:'Physicist chart review; pre-treatment timeout; RTT verification of plan name',d:2,rpn:40,
+         action:'Plan transfer gated on Approved status. Physicist verification compares TPS plan UID to R&V. SRS-specific chart check form with mandatory fields for all critical parameters.',
+         responsible:'Physics',due:'',status:'Open'},
+        {id:'MS08',step:'Post-Treatment Documentation',
+         mode:'Delivery deviations not documented — fraction proceeds without formal recording',
+         effect:'Systematic positioning or delivery deviations accumulate across fractions without detection; no learning signal generated',
+         s:7,cause:'Documentation burden in high-throughput schedule; paper-based; no structured deviation form; deviation threshold for required documentation not defined',
+         o:3,controls:'Physicist weekly IGRT trend review; RTT verbal report',d:4,rpn:84,
+         action:'Electronic structured deviation form with mandatory completion after each SRS fraction. Any deviation from planned isocenter position > 1mm logged automatically from SGRT data.',
+         responsible:'Physics + Chief Therapist',due:'',status:'Open'},
+      ]
+    });
+    addedFmea++;
+  }
+
+  // ── FMEA: Automated Contouring & Planning — Nealon et al. PRO 2022 ────────
+  if(!db.fmea.find(p=>p.id==='FMEA_AI_CONTOUR')){
+    const today=new Date().toISOString().slice(0,10);
+    db.fmea.push({
+      id:'FMEA_AI_CONTOUR',
+      name:'FMEA: AI Auto-Contouring & Automated Planning',
+      dept:'Radiation Oncology / Medical Physics',
+      facilitator:'Nealon, Balter, Douglas, Court et al. — PRO 2022',
+      date:today,version:'v1.0',tg100Key:null,isTG100:false,
+      note:'Source: Nealon KA, Balter PA, Douglas RJ, Fullen DK, Nitsch PL, Olanrewaju AM, Soliman M, Court LE. Using failure mode and effects analysis to evaluate risk in the clinical adoption of automated contouring and treatment planning tools. Pract Radiat Oncol. 2022;12(4):e344–e353. Of 290 possible failure modes, 126 were unique to the automated workflow. Mean RPN 56.3; maximum RPN 486. Key finding: the large majority of high-risk failure modes were caused by automation bias, operator error, and software error — not equipment failure. This template generalizes to any AI auto-contouring or automated planning deployment.',
+      items:[
+        {id:'NA01',step:'System Commissioning & Validation',
+         mode:'AI contouring tool deployed clinically without site-specific validation',
+         effect:'Systematic contouring errors across all patients; tool\'s training data may not represent local patient population, anatomy distribution, or scanning protocol',
+         s:9,cause:'Vendor validation data accepted as sufficient; time pressure to deploy; no physicist-led site-specific commissioning protocol; assumption that AI performance is population-invariant',
+         o:3,controls:'Vendor validation report; institutional review meeting',d:3,rpn:81,
+         action:'Mandatory site-specific validation: minimum 30-patient retrospective comparison against clinical standard. Document cases where AI performance is inadequate. Define site-specific failure modes before clinical use.',
+         responsible:'Chief Physicist + Chief Dosimetrist',due:'',status:'Open'},
+        {id:'NA02',step:'Staff Training — Automation Bias',
+         mode:'Clinical staff over-accept AI contours without adequate review (automation bias)',
+         effect:'Systematic contouring errors propagate to treatment plans without detection; incorrect OAR or target definition drives wrong dose optimization',
+         s:9,cause:'Automation perceived as more accurate than human review; time pressure reduces review thoroughness; training does not explicitly address when to override; trust calibration not included in training program',
+         o:4,controls:'Review requirement in protocol; physicist spot-check audits',d:4,rpn:144,
+         action:'Training program must explicitly include: (1) known AI failure modes for each site, (2) mandatory cases requiring override, (3) competency check demonstrating ability to identify and correct AI errors. Automation bias is a training problem, not a technology problem.',
+         responsible:'Chief Dosimetrist + Physicist',due:'',status:'Open'},
+        {id:'NA03',step:'Auto-Contouring — Target Volume',
+         mode:'AI target contour is clinically incorrect — wrong volume, missed extension, or wrong structure',
+         effect:'PTV encompasses wrong anatomy; dose optimization targets incorrect volume; under- or over-treatment of tumor',
+         s:10,cause:'AI trained on different patient population; unusual anatomy; image quality insufficient for reliable segmentation; AI applied outside its validated scope (off-label use)',
+         o:3,controls:'Physician review of all target contours; peer review process',d:2,rpn:60,
+         action:'Physician must explicitly compare AI target to clinical imaging and notes — not just approve the visual. Site-specific quality criteria defined. Flag cases where AI target deviates from physician expectation by > defined threshold.',
+         responsible:'Radiation Oncologist + Physics',due:'',status:'Open'},
+        {id:'NA04',step:'Auto-Contouring — OAR Segmentation',
+         mode:'AI OAR contour systematically incorrect — under- or over-contoured structure',
+         effect:'Dose constraints applied to incorrect anatomy; OAR overdose or inadequately constrained target; wrong DVH guides clinical decision',
+         s:8,cause:'AI failure mode specific to structure (e.g., bowel loops, brachial plexus); automatic atlas-based errors propagated without detection; dosimetrist accepts AI OAR without structure-specific review',
+         o:4,controls:'Dosimetrist review; physician approval',d:3,rpn:96,
+         action:'Structure-specific review checklist — not generic approval. Known AI failure modes for each OAR documented in SOP. Highest-consequence OARs (spinal cord, optic chiasm, brainstem) flagged for mandatory physics review before plan optimization.',
+         responsible:'Chief Dosimetrist + Physics',due:'',status:'Open'},
+        {id:'NA05',step:'Plan Transfer — AI to TPS',
+         mode:'Data transfer error — AI contours or plan parameters do not transfer accurately to institutional TPS',
+         effect:'Plan optimized to different contours than clinically approved; treatment delivered based on incorrect anatomy or constraints',
+         s:9,cause:'DICOM transfer incompatibility between AI platform and TPS; contour naming mismatch; TPS imports subset of structures; transfer not verified against source',
+         o:2,controls:'Dosimetrist visually confirms contour import; structure count check',d:3,rpn:54,
+         action:'Automated transfer verification: structure count, UID, and naming check before plan optimization begins. Any mismatch triggers re-transfer with physics review.',
+         responsible:'IT + Dosimetry + Physics',due:'',status:'Open'},
+        {id:'NA06',step:'Automated Treatment Planning',
+         mode:'Automated plan optimization produces clinically unacceptable plan — accepted without adequate review',
+         effect:'Patient treated with plan that does not meet clinical goals; OAR constraints violated or target coverage insufficient',
+         s:9,cause:'Automated optimization objective function does not align with physician intent for this specific patient; reviewer lacks familiarity with automated planning output patterns; time pressure reduces DVH scrutiny',
+         o:3,controls:'Physicist and physician plan review; DVH review against prescription',d:3,rpn:81,
+         action:'Automated plan review checklist specific to AI planning system. Plan review must compare automated output against institution\'s best-practice manual plan benchmarks. Systematic deviation from benchmark triggers mandatory manual re-planning review.',
+         responsible:'Chief Physicist + Radiation Oncologist',due:'',status:'Open'},
+        {id:'NA07',step:'Quality Assurance — AI-specific',
+         mode:'Standard IMRT QA program applied to AI-planned treatments without modification',
+         effect:'AI-specific failure modes not captured by generic QA; false safety assurance',
+         s:7,cause:'QA program designed for manual planning; AI planning patterns differ from manual; gamma passing criteria calibrated to manual plan dose distributions; no AI-specific QA metrics implemented',
+         o:3,controls:'Standard patient-specific QA; physicist weekly output check',d:3,rpn:63,
+         action:'Develop AI-specific QA supplement: (1) independent dose verification specifically designed for AI dose distribution patterns, (2) automated comparison of AI plan to population benchmarks, (3) periodic audit of AI performance trend over time.',
+         responsible:'Chief Physicist',due:'',status:'Open'},
+        {id:'NA08',step:'Ongoing Performance Monitoring',
+         mode:'AI performance degrades over time without detection (model drift)',
+         effect:'Systematic contouring or planning errors increase gradually; retrospective discovery only after patient harm',
+         s:8,cause:'No institutional process for tracking AI performance over time; no alert threshold for performance drift; vendor model updates not evaluated before clinical implementation; patient population changes not monitored',
+         o:3,controls:'Periodic physics review; institutional QI program',d:5,rpn:120,
+         action:'Establish AI performance monitoring dashboard: monthly review of contour acceptance rate, override rate by structure, and dosimetric plan quality metrics. Define threshold for triggering formal re-validation. Any vendor model update treated as new commissioning event.',
+         responsible:'Chief Physicist + QI Committee',due:'',status:'Open'},
+        {id:'NA09',step:'Governance & Scope Limitation',
+         mode:'AI tool used outside its validated scope — off-label application for sites, populations, or indications not included in commissioning',
+         effect:'Unknown failure modes applied to patients; no safety data for specific use case; systematic error with no precedent to detect it',
+         s:9,cause:'Clinical pressure to extend AI to new sites before validation is complete; inadequate documentation of validated vs. non-validated scope; staff unaware of scope boundaries',
+         o:2,controls:'Institutional policy; physician discussion',d:4,rpn:72,
+         action:'Explicit written scope statement for each AI tool: validated sites, patient populations, and planning scenarios. Off-label use requires prospective documentation and physicist sign-off. Annual scope review tied to performance monitoring data.',
+         responsible:'Medical Director + Chief Physicist',due:'',status:'Open'},
+      ]
+    });
+    addedFmea++;
+  }
+
+  // ── STPA Project 1 — Halcyon Clinical Use (Pawlicki et al. Med Phys 2019) ─
+  if(!db.fmea.find(p=>p.id==='STPA_HALCYON')){
+    const today=new Date().toISOString().slice(0,10);
+    db.fmea.push({
+      id:'STPA_HALCYON', isSTPA:true,
+      name:'STPA: RT Clinical Operations (Halcyon)',
+      dept:'Medical Physics / Radiation Therapy',
+      facilitator:'Pawlicki et al. 2019',
+      date:today, version:'v1.0',
+      note:'Source: Pawlicki et al. (Med Phys 2019) — STPA safety assessment of the Halcyon system. 23 control loops, 52 control actions, 144 UCAs, 385 causal scenarios. Key finding: 73% of causal scenarios were non-technical (organizational 33%, procedural 23%, human behavior 14%). Selected UCAs shown here represent the highest-consequence categories for routine clinical RT operations.',
+      accidents:[
+        'A1: Patient injured or killed from radiation',
+        'A2: Staff or public injured or killed from radiation',
+        'A3: Physical injury during treatment (non-radiation)',
+        'A4: Damage to equipment',
+        'A5: Damage to patient/staff satisfaction or hospital reputation'
+      ],
+      hazards:[
+        'H1: Radiation delivered wrong dose/location/wrong patient',
+        'H2: Staff/public unexpectedly exposed to radiation',
+        'H3: Patients/staff subjected to non-radiation injury risk',
+        'H4: Equipment under unexpected stress or malfunction',
+        'H5: Workflow subjected to unexpected stress, delays, or urgencies'
+      ],
+      ucas:[
+        {id:'UH01',controlAction:'Physicist performs acceptance testing and commissioning',
+         type:'NG',uca:'Physicist does not perform acceptance-commissioning before the Halcyon is used clinically',
+         hazards:['H1','H2','H4'],
+         causalScenarios:'Physicist absent when equipment delivered; department decided to treat based on vendor assurance that commissioning was not needed; physicist assumed beam was pre-configured and did not require independent verification.',
+         constraint:'No patient treatment until physicist commissioning sign-off is documented. Vendor representation is not a substitute for independent commissioning.',
+         priority:'High',status:'Open'},
+        {id:'UH02',controlAction:'Physicist performs acceptance testing and commissioning',
+         type:'GI',uca:'Physicist sub-optimally performs commissioning — equipment has a problem but it is not identified',
+         hazards:['H1','H2','H4'],
+         causalScenarios:'Physicist inexperienced and does not choose appropriate tests; too busy with routine clinical work to do detailed commissioning; department does not provide adequate time or equipment; no peer review of commissioning results.',
+         constraint:'Mandatory peer review of all commissioning results by independent physicist. Adequate time allocation must be institutional commitment, not physicist\'s personal responsibility.',
+         priority:'High',status:'Open'},
+        {id:'UH03',controlAction:'Physicist performs acceptance testing and commissioning',
+         type:'WT',uca:'Physicist completes commissioning after the Halcyon is already being used clinically and then discovers a problem',
+         hazards:['H1','H2','H4'],
+         causalScenarios:'Physicist collects data but does not have time to analyze it before first patient is treated; institutional pressure to start treating on revenue schedule.',
+         constraint:'Clinical start date must be formally decoupled from equipment delivery date. Commissioning completion criteria must be defined and signed off before first patient.',
+         priority:'High',status:'Open'},
+        {id:'UH04',controlAction:'Physicist performs acceptance testing and commissioning',
+         type:'WT',uca:'Physicist takes too long to complete commissioning, delaying clinical use unnecessarily',
+         hazards:['H5'],
+         causalScenarios:'Physicist too busy with routine clinical work to complete commissioning in a timely manner; physicist inefficient with new device due to no prior knowledge of system.',
+         constraint:'Clear commissioning timeline agreed before equipment delivery. Protected physicist time allocated.',
+         priority:'Medium',status:'Open'},
+        {id:'UH05',controlAction:'RTT identifies correct patient before treatment',
+         type:'NG',uca:'RTT does not perform patient identification before treatment delivery',
+         hazards:['H1'],
+         causalScenarios:'Verbal identification only; wristband not scanned; lookalike patients in same waiting area; identification step skipped under schedule pressure.',
+         constraint:'Electronic barcode wristband scan required before treatment room entry. System hard-stop if scan not completed.',
+         priority:'High',status:'Open'},
+        {id:'UH06',controlAction:'RTT completes pre-treatment timeout checklist',
+         type:'NG',uca:'RTT does not complete timeout checklist before beam-on',
+         hazards:['H1'],
+         causalScenarios:'No system hard-stop; timeout perceived as optional under schedule pressure; lack of leadership enforcement; paper-based checklist allows skipping; busy clinic environment normalizes abbreviation of safety steps.',
+         constraint:'Electronic checklist with mandatory completion interlock before beam-on. Medical director communication establishing non-negotiable nature.',
+         priority:'High',status:'Open'},
+        {id:'UH07',controlAction:'RTT applies IGRT shift to couch',
+         type:'GI',uca:'RTT applies IGRT couch shift in wrong direction',
+         hazards:['H1'],
+         causalScenarios:'Shift direction convention confusion between isocenter displacement and couch displacement; non-intuitive R&V user interface; no second-check requirement for shift direction.',
+         constraint:'Directional shift SOP with visual aid posted at console. Direction confirmation as required element of IGRT review. Annual RTT competency assessment includes this step.',
+         priority:'High',status:'Open'},
+        {id:'UH08',controlAction:'Department leadership allocates resources for clinical operations',
+         type:'GI',uca:'Leadership allocates insufficient resources (staffing, time, equipment) for safe implementation and operation',
+         hazards:['H1','H2','H5'],
+         causalScenarios:'Revenue pressure to start treating quickly; underestimation of physics time required; staffing shortage not addressed before implementation; assumption that technical safeguards compensate for organizational gaps.',
+         constraint:'Formal resource allocation plan required before implementation. Leadership must understand that 73% of RT system risks are non-technical — resourcing physics and training IS the primary safety intervention.',
+         priority:'High',status:'Open'},
+        {id:'UH09',controlAction:'Physician approves treatment plan',
+         type:'WT',uca:'Physician approves plan before adequate physics review is complete',
+         hazards:['H1'],
+         causalScenarios:'Physics review not formally gated before physician approval; workflow allows physician to approve while physics check is pending; time pressure; no system notification to physician of outstanding physics issues.',
+         constraint:'System workflow must enforce physics approval before physician approval option is available. Approval sequence enforced in EMR/TPS.',
+         priority:'High',status:'Open'},
+        {id:'UH10',controlAction:'Physicist performs patient-specific QA',
+         type:'GI',uca:'Physicist accepts gamma analysis failure without documented clinical justification',
+         hazards:['H1'],
+         causalScenarios:'Action threshold set without clinical justification; physicist overrides under workload pressure; no formal review process required for threshold failures; lack of management enforcement.',
+         constraint:'Gamma threshold failure triggers mandatory formal documented review. No silent override permitted. Threshold failure logged in QA system and reviewed at monthly physics meeting.',
+         priority:'High',status:'Open'},
+      ]
+    });
+    addedFmea++;
+  }
+
+  // ── STPA Project 2 — IMRT Process UCAs (Silvis-Cividjian et al. 2020) ──
+  if(!db.fmea.find(p=>p.id==='STPA_IMRT')){
+    const today=new Date().toISOString().slice(0,10);
+    db.fmea.push({
+      id:'STPA_IMRT', isSTPA:true,
+      name:'STPA: IMRT Process — UCAs That FMEA Missed',
+      dept:'Radiation Oncology',
+      facilitator:'Silvis-Cividjian, Verbakel, Admiraal 2020',
+      date:today, version:'v1.0',
+      note:'Source: Silvis-Cividjian et al. (Safety Science 2020) — STPA applied to the VUmc IMRT/VMAT process. 142 UCAs identified vs. a prior 7-year HFMEA. Key finding: STPA found additional UCAs not in the HFMEA — predominantly time-related (Wrong Timing type). These are "correct actions performed at the wrong time," a category FMEA cannot surface because it focuses on component failures rather than control relationships. UCAs shown here are those specifically identified as new findings vs. HFMEA.',
+      accidents:[
+        'A1: Patient injured or killed from radiation exposure',
+        'A2: Non-patient is injured by radiation',
+        'A5: Process failures detected too far downstream in workflow'
+      ],
+      hazards:[
+        'H1: Wrong radiation delivery to patient (underdose / overdose / wrong volume / wrong patient)',
+        'H2: Non-patient unnecessarily exposed to radiation',
+        'H5: Process failures detected too far downstream'
+      ],
+      ucas:[
+        {id:'UI01',controlAction:'Post-planning radiographer sends DICOM files to treatment delivery',
+         type:'WT',uca:'UCA 49: Post-planning radiographer sends DICOM files to treatment delivery BEFORE they are approved and complete',
+         hazards:['H1'],
+         causalScenarios:'TPS export not gated on approval status; radiographer misreads plan status as complete under end-of-shift pressure; TPS status display ambiguous between "In Review" and "Approved"; no system notification sent when unapproved plan is transferred.',
+         constraint:'TPS must gate DICOM export on Approved status — hard interlock, not SOP compliance. System notification to reviewer when transfer is attempted.',
+         priority:'High',status:'Open'},
+        {id:'UI02',controlAction:'CT radiographers acquire CT images',
+         type:'WT',uca:'UCA 32: CT radiographers start acquiring images long after patient has been immobilized on the treatment table, without checking if patient is still in the correct position',
+         hazards:['H1'],
+         causalScenarios:'No time limit defined between immobilization and scan start; workflow bottlenecks cause delays; no protocol requiring position re-verification after delay; assumption that immobilization maintains position indefinitely.',
+         constraint:'Define maximum acceptable time between immobilization and scan acquisition. Re-verification of position required if threshold exceeded.',
+         priority:'Medium',status:'Open'},
+        {id:'UI03',controlAction:'Radiation oncologist requests treatment plan',
+         type:'WT',uca:'UCA 7: Radiation oncologist asks for a plan long after writing the physician intent (PI) and contouring the target on CT-scan images',
+         hazards:['H1','H5'],
+         causalScenarios:'No time monitoring for workflow steps; oncologist not notified when PI has been waiting; scheduling system does not track planning workflow status; no automated reminder when PI is idle beyond expected duration.',
+         constraint:'Build workflow reminder in scheduling software when PI has been awaiting planning request beyond defined threshold. Hire logistics manager or configure EMR notification.',
+         priority:'Medium',status:'Open'},
+        {id:'UI04',controlAction:'Planning radiographer runs TPS re-optimization',
+         type:'WT',uca:'UCA 44: Planning radiographer keeps applying re-optimization in TPS long after peer reviewers have already approved the plan',
+         hazards:['H1'],
+         causalScenarios:'No system lock on approved plans; radiographer believes further optimization is beneficial without understanding that approval represents a clinical decision boundary; confusion about when "approved" status becomes binding.',
+         constraint:'TPS must lock plan from further modification once Approved status is set. Any further optimization requires documented reason and re-approval workflow.',
+         priority:'High',status:'Open'},
+        {id:'UI05',controlAction:'Linac radiographer starts or resumes treatment',
+         type:'NG',uca:'UCA 110: Linac radiographer does NOT start/resume treatment while everything (patient, linac) is otherwise ready — causing unacceptable treatment delay',
+         hazards:['H5'],
+         causalScenarios:'Radiographer over-cautious due to ambiguous situation; unclear authority to proceed; inadequate training on when to proceed vs. escalate; excessive reliance on physicist for routine fractions.',
+         constraint:'Clear decision authority protocol: define specifically which situations require physicist contact vs. RTT independent action. Reduces both delay and unsafe proceeding.',
+         priority:'Low',status:'Open'},
+        {id:'UI06',controlAction:'Linac radiographer halts treatment',
+         type:'NG',uca:'UCA 124: Linac radiographer does NOT halt the treatment when the patient has left the treatment table',
+         hazards:['H1','H2'],
+         causalScenarios:'Currently protected by software (emergency stop triggered when imminent collision detected) and procedures (last person leaving presses button) — but if these controls fail, UCA is high consequence. New systems may have different safeguard configurations.',
+         constraint:'Verify all protection mechanisms are intact for any new linac system. STPA identified this UCA even though currently protected — it should be explicitly tested during commissioning.',
+         priority:'Medium',status:'Open'},
+        {id:'UI07',controlAction:'Planning radiographer contours OAR and sets collimator',
+         type:'GI',uca:'UCA 34: Planning radiographer runs re-optimization with wrong parameters (OAR contours, collimator settings)',
+         hazards:['H1'],
+         causalScenarios:'Treatment prescription or protocols are ambiguous, allowing wrong interpretation; radiographer interrupted (phone, handover) and restarts from wrong point; radiographer uses incorrect collimator positioning based on incorrect belief about TPS behavior; previous experience with same incorrect approach without problems creates false confidence.',
+         constraint:'Explicit protocol for collimator jaw positioning with examples. Structured handover process when planning is interrupted. TPS display to clearly show current collimator position relative to protocol guidance.',
+         priority:'High',status:'Open'},
+        {id:'UI08',controlAction:'Radiation oncologist sees patient for follow-up after treatment',
+         type:'WT',uca:'UCA 19: Radiation oncologist sees the patient too long after treatment ends',
+         hazards:['H5'],
+         causalScenarios:'No system monitoring of follow-up scheduling compliance; post-treatment workflow not integrated with safety monitoring; treatment outcome data not linked back to process improvement.',
+         constraint:'Automated scheduling check for follow-up within defined post-treatment window. Late follow-up flagged in quality dashboard.',
+         priority:'Low',status:'Open'},
+      ]
+    });
+    addedFmea++;
+  }
+
+  if(addedInc===0&&addedFmea===0){
+    if(!silent)alert('Literature examples are already loaded.');return;
+  }
+  saveDB();refreshILSList();renderCauseDist();renderFmeaList();
+  if(!silent)alert('✅ Loaded '+addedInc+' literature incident example(s) and '+addedFmea+' literature risk assessment project(s).\n\n'+
+    'ILS: LIT001 · LIT002 · LIT003\n\n'+
+    'Risk Assessment:\n'+
+    '  FMEA: SRS Surface-Guided Cranial (Manger et al. Med Phys 2015)\n'+
+    '  FMEA: AI Auto-Contouring & Automated Planning (Nealon et al. PRO 2022)\n'+
+    '  FMEA: New Technology Implementation (Pawlicki 2019)\n'+
+    '  STPA: RT Clinical Operations / Halcyon (Pawlicki 2019)\n'+
+    '  STPA: IMRT UCAs FMEA Missed (Silvis-Cividjian 2020)');
+}
+
+
+function loadTG100Templates(){
+  const templates=buildTG100Templates();let added=0;
+  templates.forEach(t=>{if(!db.fmea.find(p=>p.id===t.id)){db.fmea.push(t);added++;}});
+  if(added===0){alert('TG-100 templates already loaded.');return;}
+  saveDB();renderFmeaList();
+  if(document.getElementById('pm').classList.contains('active'))renderPMSidebar();
+  alert('✅ Loaded '+added+' TG-100 FMEA templates. Process map steps now show risk colors.');
+}
+
+/* ═══════════════════════════════════════════════════════
+   NAVIGATION
+═══════════════════════════════════════════════════════ */
+function showTab(id){
+  document.querySelectorAll('.tab-content').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('nav-'+id).classList.add('active');
+  if(id==='pm'){renderPMSidebar();if(curMapId)renderMap(curMapId);}
+  else if(id==='ils'){populateStepLinkDropdown();populatePPLinkChecks([]);renderCauseDist();}
+  else refreshAll();
+}
+function refreshAll(){
+  refreshHuddle();refreshHuddleLog();refreshILSList();renderCauseDist();
+  renderFmeaList();renderPPList();
+}
+
+/* ═══════════════════════════════════════════════════════
+   HUDDLE
+═══════════════════════════════════════════════════════ */
+function refreshHuddle(){
+  const today=new Date();
+  const yStr=new Date(Date.now()-86400000).toISOString().slice(0,10);
+  document.getElementById('huddle-date').textContent=
+    today.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+  const recent=db.incidents.filter(i=>(i.when||'').startsWith(yStr));
+  const feed=document.getElementById('huddle-feed');
+  feed.innerHTML=recent.length?recent.map(i=>`
+    <div class="huddle-chip" onclick="viewIncident('${i.id}')">
+      <div style="font-size:18px;flex-shrink:0;">⚠️</div>
+      <div class="huddle-chip-body">
+        <h4>[${i.where||'?'}] ${(i.what||'').substring(0,90)}…</h4>
+        <p>${i.severity||''} · By: ${i.who||'?'} · Status: <strong>${i.status||'?'}</strong></p>
+      </div></div>`).join(''):
+    '<p style="color:var(--muted);font-style:italic;font-size:12px;padding:4px 0;">✅ No incidents from yesterday.</p>';
+  if(!document.getElementById('h-date').value)
+    document.getElementById('h-date').value=today.toISOString().slice(0,10);
+}
+function refreshHuddleLog(){
+  const c=document.getElementById('huddle-log-list');
+  const sorted=[...db.huddles].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('huddle-count').textContent=sorted.length+' logged';
+  if(!sorted.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">📋</div>No huddles yet</div>';return;}
+  c.innerHTML=sorted.map(h=>`
+    <div class="huddle-log-item" onclick="viewHuddle('${h.id}')">
+      <div class="hli-date">📅 ${h.date}</div>
+      <div class="hli-att">👥 ${h.attendees||'—'}</div>
+      ${h.tomorrow?`<div class="hli-preview">${h.tomorrow.substring(0,55)}…</div>`:''}
+    </div>`).join('');
+}
+function viewHuddle(id){
+  const h=db.huddles.find(x=>x.id===id);if(!h)return;
+  document.getElementById('huddle-form-view').style.display='none';
+  const dv=document.getElementById('huddle-detail-view');dv.style.display='block';
+  dv.innerHTML=`<div class="card">
+    <div class="card-hd">
+      <div><h3 class="card-title">📋 Huddle — ${h.date}</h3>
+        <div class="card-sub">Logged: ${(h.timestamp||'').slice(0,16).replace('T',' ')}</div></div>
+      <button class="btn-ghost" onclick="showHuddleForm()">+ New Huddle</button>
+    </div>
+    <div class="info-grid" style="grid-template-columns:1fr 1fr;">
+      <div><div class="ig-label">Attendees</div><div class="ig-val">${h.attendees||'—'}</div></div>
+      <div><div class="ig-label">Date</div><div class="ig-val">${h.date}</div></div>
+    </div>
+    ${h.tomorrow?`<div style="margin-bottom:14px;"><div class="ig-label" style="margin-bottom:6px;">⚡ Anticipated Risks</div>
+      <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px;font-size:12.5px;line-height:1.6;">${h.tomorrow.replace(/\n/g,'<br>')}</div></div>`:''}
+    ${h.actions?`<div><div class="ig-label" style="margin-bottom:6px;">✅ Actions Assigned</div>
+      <div style="background:var(--teal-lt);border:1px solid #a7f3d0;border-radius:6px;padding:12px;font-size:12.5px;line-height:1.6;">${h.actions.replace(/\n/g,'<br>')}</div></div>`:''}
+    <div class="form-footer"><button class="btn-del" onclick="deleteHuddle('${h.id}')">🗑 Delete</button></div>
+  </div>`;
+  document.querySelectorAll('.huddle-log-item').forEach(el=>el.classList.remove('sel'));
+  const sel=document.querySelector(`.huddle-log-item[onclick="viewHuddle('${id}')"]`);
+  if(sel)sel.classList.add('sel');
+}
+function showHuddleForm(){
+  document.getElementById('huddle-detail-view').style.display='none';
+  document.getElementById('huddle-form-view').style.display='block';
+  document.querySelectorAll('.huddle-log-item').forEach(el=>el.classList.remove('sel'));
+}
+function deleteHuddle(id){
+  if(!confirm('Delete this huddle record?'))return;
+  db.huddles=db.huddles.filter(h=>h.id!==id);saveDB();refreshHuddleLog();showHuddleForm();
+}
+function saveHuddle(){
+  const d=document.getElementById('h-date').value;
+  if(!d){alert('Please select a huddle date.');return;}
+  db.huddles.push({id:'H'+Date.now(),date:d,
+    attendees:document.getElementById('h-attendees').value,
+    tomorrow:document.getElementById('h-tomorrow').value,
+    actions:document.getElementById('h-actions').value,
+    timestamp:new Date().toISOString()});
+  saveDB();['h-attendees','h-tomorrow','h-actions'].forEach(id=>document.getElementById(id).value='');
+  refreshHuddleLog();alert('Huddle logged.');
+}
+
+/* ═══════════════════════════════════════════════════════
+   ILS & RCA
+═══════════════════════════════════════════════════════ */
+function populateStepLinkDropdown(){
+  const sel=document.getElementById('i-steplink');const cur=sel.value;
+  sel.innerHTML='<option value="">Select a process step…</option>';
+  const allMaps=[BUILTIN_MAP,...db.processMaps];
+  allMaps.forEach(m=>{
+    const grp=document.createElement('optgroup');grp.label=m.name;
+    (m.steps||[]).forEach(s=>{
+      const opt=document.createElement('option');opt.value=s.id;
+      opt.textContent=(s.label||'').replace('\n',' ')+' ('+s.lane+')';
+      if(s.id===cur)opt.selected=true;
+      grp.appendChild(opt);});
+    sel.appendChild(grp);
+  });
+}
+function refreshILSList(){
+  const c=document.getElementById('ils-list');
+  if(!db.incidents.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">📭</div>No incidents</div>';return;}
+  const sC={'Open':'br','Under Investigation':'by','Action Pending':'by','Closed':'bg'};
+  const etLabels={'process_improvement':'🔧 Process Impr.','unsafe_condition':'⚠️ Unsafe Cond.','near_miss':'🎯 Near Miss','incident':'🚨 Incident'};
+  const etColors={'process_improvement':'#0891b2','unsafe_condition':'#d97706','near_miss':'#7c3aed','incident':'#dc2626'};
+  c.innerHTML=[...db.incidents].reverse().map(i=>{
+    const et=i.eventType||'';
+    const etBadge=et?`<span style="background:${etColors[et]}18;color:${etColors[et]};padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:700;">${etLabels[et]||et}</span>`:'';
+    const sevBadge=i.severity&&et==='incident'?`<span style="font-size:9.5px;color:var(--muted);padding:1px 5px;border:1px solid #e2e8f0;border-radius:5px;">${i.severity}</span>`:'';
+    const causBadges=(i.causality||[]).map(code=>{
+      const colors={ORG:'#2563eb',TECH:'#0891b2',HB:'#dc2626',PROC:'#d97706',PT:'#7c3aed'};
+      return `<span style="background:${colors[code]}15;color:${colors[code]};padding:1px 5px;border-radius:6px;font-size:9.5px;font-weight:700;">${code}</span>`;
+    }).join('');
+    return `<div class="list-item" id="li-${i.id}" onclick="viewIncident('${i.id}')">
+      <div class="li-title">${i.id} · ${i.where||'Unknown'}</div>
+      <div class="li-sub">${(i.when||'').slice(0,10)} · ${(i.what||'').substring(0,36)}…</div>
+      <div class="li-meta">
+        ${etBadge}
+        ${sevBadge}
+        ${i.stepLink?'<span class="badge bb">🗺️</span>':''}
+        ${i.cast&&i.cast.constraint?'<span class="badge bm">CAST</span>':''}
+        ${i.id&&i.id.startsWith('LIT')?'<span style="background:#fdf4ff;color:#7e22ce;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:700;">📄 LIT</span>':''}
+        ${causBadges}
+      </div></div>`;}).join('');
+}
+function viewIncident(id){
+  showTab('ils');
+  const item=db.incidents.find(e=>e.id===id);if(!item)return;
+  populateStepLinkDropdown();
+  const m={'i-id':id,'i-when':item.when||'','i-where':item.where||'','i-who':item.who||'',
+    'i-what':item.what||'','i-why':item.why||'','w1':item.w1||'','w2':item.w2||'',
+    'w3':item.w3||'','w4':item.w4||'','w5':item.w5||'','w-root':item.rootCause||'','i-action':item.action||''};
+  Object.entries(m).forEach(([k,v])=>document.getElementById(k).value=v);
+  // Backward compatibility: infer eventType if missing
+  let inferredEventType = item.eventType || '';
+  if(!inferredEventType){
+    if(item.severity&&item.severity!=='Near Miss') inferredEventType='incident';
+    else if(item.severity==='Near Miss') inferredEventType='near_miss';
+    else if(item.cast&&item.cast.constraint) inferredEventType='incident';
+  }
+  document.getElementById('i-severity').value=item.severity&&item.severity!=='Near Miss'?item.severity:'';
+  document.getElementById('i-event-type').value=inferredEventType;
+  onEventTypeChange();
+  document.getElementById('i-status').value=item.status||'Open';
+  document.getElementById('i-steplink').value=item.stepLink||'';
+  setCheckedCauses(item.causality||[]);
+  populatePPLinkChecks(item.linkedPolicies||[]);
+  // Populate CAST fields first — so onSeverityChange can detect existing data
+  const cast=item.cast||{};
+  ['constraint','rtt_c','rtt_m','rtt_x','phys_c','phys_m','phys_x',
+   'dosi_c','dosi_m','dosi_x','mgmt_c','mgmt_m','mgmt_x',
+   'equip_c','equip_m','equip_x','systemic','intervention'].forEach(k=>{
+    const el=document.getElementById('cast-'+k);if(el)el.value=cast[k]||'';
+  });
+  // Now check whether to show CAST panel (reads the just-populated fields)
+  onSeverityChange();
+  // Show source note if literature example
+  const existingNote=document.getElementById('lit-source-note');
+  if(existingNote)existingNote.remove();
+  if(item.note){
+    const nb=document.createElement('div');nb.id='lit-source-note';
+    nb.style.cssText='background:#fdf4ff;border:1px solid #e9d5ff;border-radius:7px;padding:10px 14px;margin-bottom:14px;font-size:11.5px;color:#6b21a8;line-height:1.6;';
+    nb.innerHTML='📄 <strong>Literature Example</strong> — '+item.note;
+    document.querySelector('#ils .split-main .card .card-hd').insertAdjacentElement('afterend',nb);
+  }
+  document.getElementById('ils-title').textContent='Update: '+id;
+  document.querySelectorAll('#ils-list .list-item').forEach(e=>e.classList.remove('sel'));
+  const el=document.getElementById('li-'+id);if(el)el.classList.add('sel');
+  document.querySelector('#ils .split-main').scrollTop=0;
+}
+function newIncident(){
+  const nextId='ILS'+String(db.incidents.length+1).padStart(3,'0');
+  document.getElementById('i-id').value=nextId;
+  ['i-when','i-where','i-who','i-what','i-why','w1','w2','w3','w4','w5','w-root','i-action']
+    .forEach(id=>document.getElementById(id).value='');
+  document.getElementById('i-severity').value='';
+  document.getElementById('i-event-type').value='';
+  document.getElementById('severity-fg').style.display='none';
+  document.getElementById('i-status').value='Open';
+  document.getElementById('ils-title').textContent='New Incident Report';
+  document.querySelectorAll('#ils-list .list-item').forEach(e=>e.classList.remove('sel'));
+  setCheckedCauses([]);
+  populatePPLinkChecks([]);
+  document.getElementById('cast-panel').style.display='none';
+  const existingNote=document.getElementById('lit-source-note');
+  if(existingNote)existingNote.remove();
+  ['constraint','rtt_c','rtt_m','rtt_x','phys_c','phys_m','phys_x',
+   'dosi_c','dosi_m','dosi_x','mgmt_c','mgmt_m','mgmt_x',
+   'equip_c','equip_m','equip_x','systemic','intervention'].forEach(k=>{
+    const el=document.getElementById('cast-'+k);if(el)el.value='';});
+  populateStepLinkDropdown();
+}
+function getCastData(){
+  const keys=['constraint','rtt_c','rtt_m','rtt_x','phys_c','phys_m','phys_x',
+    'dosi_c','dosi_m','dosi_x','mgmt_c','mgmt_m','mgmt_x',
+    'equip_c','equip_m','equip_x','systemic','intervention'];
+  const obj={};
+  keys.forEach(k=>{const el=document.getElementById('cast-'+k);if(el)obj[k]=el.value;});
+  return obj;
+}
+function saveIncident(){
+  const id=document.getElementById('i-id').value||'ILS'+Date.now();
+  const obj={id,
+    when:document.getElementById('i-when').value,
+    where:document.getElementById('i-where').value,
+    who:document.getElementById('i-who').value,
+    what:document.getElementById('i-what').value,
+    why:document.getElementById('i-why').value,
+    w1:document.getElementById('w1').value,w2:document.getElementById('w2').value,
+    w3:document.getElementById('w3').value,w4:document.getElementById('w4').value,
+    w5:document.getElementById('w5').value,
+    rootCause:document.getElementById('w-root').value,
+    action:document.getElementById('i-action').value,
+    severity:document.getElementById('i-severity').value,
+    eventType:document.getElementById('i-event-type').value,
+    status:document.getElementById('i-status').value,
+    stepLink:document.getElementById('i-steplink').value,
+    causality:getCheckedCauses(),
+    linkedPolicies:getLinkedPolicies(),
+    cast:getCastData(),
+    timestamp:new Date().toISOString()};
+  const idx=db.incidents.findIndex(e=>e.id===id);
+  if(idx>=0)db.incidents[idx]=obj;else db.incidents.push(obj);
+  saveDB();refreshILSList();renderCauseDist();alert('Incident saved.');
+}
+function newIncidentFromStep(stepId){
+  showTab('ils');newIncident();
+  setTimeout(()=>{document.getElementById('i-steplink').value=stepId;},100);
+}
+
+/* ═══════════════════════════════════════════════════════
+   PROCESS MAP
+═══════════════════════════════════════════════════════ */
+function resolveMapObj(id){
+  if(id===BUILTIN_MAP.id)return BUILTIN_MAP;
+  return db.processMaps.find(m=>m.id===id)||null;
+}
+function getStepRisk(step,map){
+  let items=[];
+  if(map.isBuiltIn&&step.tg100Key){
+    const linked=db.fmea.filter(p=>p.tg100Key===step.tg100Key);
+    items=linked.flatMap(p=>p.items||[]);
+  }else if(step.fmeaId){
+    const p=db.fmea.find(x=>x.id===step.fmeaId);items=(p&&p.items)||[];
+  }
+  if(!items.length)return'none';
+  const mx=Math.max(...items.map(i=>parseInt(i.rpn)||0));
+  return mx>100?'high':mx>50?'medium':'low';
+}
+function riskColor(r){return{high:'#ef4444',medium:'#f59e0b',low:'#22c55e',none:'#94a3b8'}[r]||'#94a3b8';}
+
+function renderPMSidebar(){
+  const c=document.getElementById('pm-sidebar-list');
+  const allMaps=[BUILTIN_MAP,...db.processMaps];
+  if(!allMaps.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">🗺️</div>No maps</div>';return;}
+  c.innerHTML=allMaps.map(m=>`
+    <div class="pm-map-item ${curMapId===m.id?'sel':''}" onclick="renderMap('${m.id}')">
+      <div class="li-title">${m.isBuiltIn?'🔒 ':''}${m.name}</div>
+      <div class="li-sub">${m.lanes?m.lanes.length+' lanes · ':''} ${m.steps?m.steps.length+' steps':''}</div>
+    </div>`).join('');
+}
+
+function renderMap(id){
+  curMapId=id;renderPMSidebar();
+  const map=resolveMapObj(id);if(!map)return;
+  const steps=map.steps||[];
+  if(!steps.length){
+    document.getElementById('pm-svg-wrap').innerHTML=
+      `<div class="empty-st" style="padding-top:80px;"><div class="empty-st-icon">➕</div>
+      <p>No steps yet.</p>
+      ${!map.isBuiltIn?`<button class="btn-primary" onclick="openAddStepModal('${id}')">+ Add First Step</button>`:''}
+      </div>`;return;
+  }
+  const BW=110,BH=58,CW=148,PAD=16,LL=128,CH=28;
+  const NL=map.lanes.length,maxCol=Math.max(...steps.map(s=>parseInt(s.col)||1));
+  const LH=Math.max(96,BH+32);
+  const W=LL+PAD*2+(maxCol)*CW+10,H=CH+PAD*2+NL*LH+20;
+  const pos={};const cellIdx={};const cellCounts={};
+  steps.forEach(s=>{const li=map.lanes.indexOf(s.lane),col=parseInt(s.col)||1,key=col+'_'+li;cellCounts[key]=(cellCounts[key]||0)+1;});
+  steps.forEach(s=>{
+    const li=map.lanes.indexOf(s.lane),col=parseInt(s.col)||1,key=col+'_'+li;
+    cellIdx[key]=(cellIdx[key]||0);
+    const n=cellCounts[key],offset=(cellIdx[key]-((n-1)/2))*20;
+    cellIdx[key]++;
+    pos[s.id]={cx:LL+PAD+(col-1)*CW+BW/2+CW/2-BW/2,cy:CH+PAD+li*LH+LH/2+offset};
+  });
+  const lBg=['#eff6ff','#f0fdf4','#fdf4ff','#fff7ed','#f0f9ff'];
+  const lAc=['#2563eb','#16a34a','#7c3aed','#ea580c','#0891b2'];
+  let svg=`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}"
+    style="display:block;min-width:${W}px;width:${W}px;">
+<defs>
+<marker id="arw" markerWidth="7" markerHeight="7" refX="5.5" refY="3.5" orient="auto">
+  <polygon points="0 0.5,6 3.5,0 6.5" fill="#94a3b8"/></marker>
+<filter id="sh"><feDropShadow dx="0" dy="1.5" stdDeviation="2" flood-opacity="0.11"/></filter>
+</defs>`;
+  map.lanes.forEach((name,i)=>{
+    const y0=CH+PAD+i*LH-LH/2+6;
+    svg+=`<rect x="0" y="${y0}" width="${W}" height="${LH}" fill="${lBg[i%lBg.length]}" opacity="0.65"/>`;
+    svg+=`<rect x="0" y="${y0}" width="${LL-4}" height="${LH}" fill="${lAc[i%lAc.length]}" opacity="0.09"/>`;
+    svg+=`<text x="${LL-10}" y="${CH+PAD+i*LH+LH/2+5}" text-anchor="end"
+      font-family="Segoe UI,sans-serif" font-size="11" font-weight="700" fill="${lAc[i%lAc.length]}">${name}</text>`;
+  });
+  for(let c=1;c<=maxCol;c++){
+    const x=LL+PAD+(c-1)*CW+CW;
+    svg+=`<line x1="${x}" y1="${CH+2}" x2="${x}" y2="${H-PAD+10}" stroke="#e2e8f0" stroke-width="1" stroke-dasharray="4,4"/>`;
+    svg+=`<text x="${LL+PAD+(c-1)*CW+CW/2+10}" y="${CH-8}" text-anchor="middle"
+      font-family="Segoe UI,sans-serif" font-size="9" font-weight="700" fill="#64748b" letter-spacing="0.8">PHASE ${c}</text>`;
+  }
+  const edges=map.edges||autoEdges(steps);
+  edges.forEach(([a,b])=>{
+    const p1=pos[a],p2=pos[b];if(!p1||!p2)return;
+    const x1=p1.cx+BW/2-2,y1=p1.cy,x2=p2.cx-BW/2+2,y2=p2.cy;
+    if(Math.abs(y1-y2)<4){
+      svg+=`<line x1="${x1}" y1="${y1}" x2="${x2-4}" y2="${y2}" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arw)"/>`;
+    }else{
+      const mx=(x1+x2)/2;
+      svg+=`<path d="M${x1},${y1} C${mx},${y1} ${mx},${y2} ${x2-4},${y2}" stroke="#94a3b8" stroke-width="1.5" fill="none" stroke-dasharray="5,3" marker-end="url(#arw)"/>`;
+    }
+  });
+  steps.forEach(s=>{
+    const p=pos[s.id];if(!p)return;
+    const {cx,cy}=p,x=cx-BW/2,y=cy-BH/2;
+    const risk=getStepRisk(s,map),bc=riskColor(risk);
+    const lines=(s.label||'').split('\n');
+    const incCount=db.incidents.filter(i=>i.stepLink===s.id).length;
+    svg+=`<g onclick="selectPMStep('${s.id}','${id}')" style="cursor:pointer;">
+  <rect x="${x}" y="${y}" width="${BW}" height="${BH}" rx="7" fill="#fff" stroke="${bc}" stroke-width="2.5" filter="url(#sh)"/>
+  <rect x="${x}" y="${y}" width="5" height="${BH}" rx="3" fill="${bc}"/>
+  ${lines.map((l,li)=>`<text x="${cx+4}" y="${cy+(li-(lines.length-1)/2)*14+4}"
+    text-anchor="middle" font-family="Segoe UI,sans-serif" font-size="10" font-weight="600" fill="#1e293b" pointer-events="none">${l}</text>`).join('')}
+  ${incCount>0?`<circle cx="${x+BW-10}" cy="${y+10}" r="7" fill="#ef4444"/>
+    <text x="${x+BW-10}" y="${y+14}" text-anchor="middle" font-family="Segoe UI,sans-serif" font-size="8.5" font-weight="700" fill="#fff" pointer-events="none">${incCount}</text>`:''}
+  ${risk!=='none'?`<circle cx="${x+BW-10}" cy="${y+BH-10}" r="4" fill="${bc}" opacity="0.8"/>`:``}
+</g>`;
+  });
+  svg+='</svg>';
+  document.getElementById('pm-svg-wrap').innerHTML=
+    `${!map.isBuiltIn?`<div style="padding:0 0 12px;display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn-xs blue" onclick="openAddStepModal('${id}')">+ Add Step</button>
+      <button class="btn-del" onclick="deletePMMap('${id}')">🗑 Delete Map</button>
+    </div>`:''}
+    ${svg}
+    <p style="font-size:10.5px;color:var(--muted);padding:10px 0 0;">
+      🔴 Red badge = incident count · Colored dot = FMEA risk level · Click any step for FMEA + STPA + incident analysis</p>`;
+}
+
+function autoEdges(steps){
+  const sorted=[...steps].sort((a,b)=>(parseInt(a.col)||1)-(parseInt(b.col)||1));
+  const edges=[];
+  for(let i=0;i<sorted.length-1;i++){
+    const a=sorted[i],b=sorted[i+1];
+    if((parseInt(a.col)||1)!==(parseInt(b.col)||1)||a.lane===b.lane)edges.push([a.id,b.id]);
+  }
+  return edges;
+}
+
+function selectPMStep(stepId,mapId){
+  const map=resolveMapObj(mapId);if(!map)return;
+  const step=map.steps.find(s=>s.id===stepId);if(!step)return;
+  document.getElementById('pm-detail').classList.add('open');
+  document.getElementById('pmd-title').textContent=(step.label||'').replace('\n',' ');
+  const laneIdx=map.lanes.indexOf(step.lane);
+  const lAc=['#2563eb','#16a34a','#7c3aed','#ea580c','#0891b2'];
+  const lc=lAc[laneIdx%lAc.length]||'#64748b';
+  document.getElementById('pmd-meta').innerHTML=
+    `<span style="font-size:11px;font-weight:700;color:${lc};">${step.lane||''}</span>
+     <span style="font-size:10.5px;color:var(--muted);margin-left:8px;">Phase ${step.col||1}</span>`;
+  let items=[];let fmeaName='';
+  if(map.isBuiltIn&&step.tg100Key){
+    const linked=db.fmea.filter(p=>p.tg100Key===step.tg100Key);
+    items=linked.flatMap(p=>p.items||[]);fmeaName=linked.map(p=>p.name).join(', ')||'';
+  }else if(step.fmeaId){
+    const p=db.fmea.find(x=>x.id===step.fmeaId);items=(p&&p.items)||[];fmeaName=p?p.name:'';
+  }
+  items.sort((a,b)=>(parseInt(b.rpn)||0)-(parseInt(a.rpn)||0));
+  const maxRPN=items.length?Math.max(...items.map(i=>parseInt(i.rpn)||0)):0;
+  const rc=maxRPN>100?'br':maxRPN>50?'by':'bg';
+  const incidents=db.incidents.filter(i=>i.stepLink===stepId);
+  let body=`<p style="font-size:12px;color:var(--muted);line-height:1.6;margin:0 0 14px;">${step.desc||'No description.'}</p>`;
+  // FMEA
+  body+=`<div class="pmd-sect">⚠️ Linked FMEA</div>`;
+  if(!items.length){
+    body+=`<p style="font-size:11.5px;color:var(--muted);margin:0 0 10px;">No FMEA data linked to this step.
+      ${!map.isBuiltIn?`<button class="btn-link" onclick="openModal('fmea-proj-modal')">Create FMEA →</button>`:'Load TG-100 templates to populate.'}</p>`;
+  }else{
+    body+=`<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+      <span class="badge ${rc}">Max RPN: ${maxRPN}</span>
+      <span class="badge bb">${items.length} FMs</span>
+      ${fmeaName?`<span style="font-size:10.5px;color:var(--muted);">${fmeaName}</span>`:''}
+    </div>`;
+    items.slice(0,4).forEach(it=>{
+      const c=parseInt(it.rpn)>100?'br':parseInt(it.rpn)>50?'by':'bg';
+      body+=`<div class="fm-chip">
+        <div class="fm-chip-mode">${it.mode}</div>
+        <div class="fm-chip-step">${it.step} — <span class="badge ${c}">RPN ${it.rpn}</span></div>
+      </div>`;});
+    body+=`<button class="btn-link" onclick="showTab('fmea')" style="margin-top:4px;">View full FMEA →</button>`;
+  }
+  // Incidents
+  body+=`<hr style="border:none;border-top:1px solid var(--border);margin:12px 0;">
+    <div class="pmd-sect">🔍 Linked Incidents (${incidents.length})</div>`;
+  if(!incidents.length){
+    body+=`<p style="font-size:11.5px;color:var(--muted);margin:0 0 8px;">No incidents traced to this step.</p>`;
+  }else{
+    body+=incidents.map(i=>{
+      const hasCast=i.cast&&i.cast.constraint;
+      return `<div class="fm-chip" style="cursor:pointer;" onclick="viewIncident('${i.id}')">
+        <div class="fm-chip-mode">${i.id} — ${i.severity||'?'} ${hasCast?'<span class="btg">CAST</span>':''}</div>
+        <div class="fm-chip-step">${(i.what||'').substring(0,60)}…</div>
+        ${(i.causality||[]).length?`<div style="margin-top:4px;">${(i.causality||[]).map(c=>`<span style="font-size:9px;font-weight:700;color:#64748b;background:#f1f5f9;padding:1px 5px;border-radius:4px;margin-right:3px;">${c}</span>`).join('')}</div>`:''}
+      </div>`;}).join('');
+  }
+  body+=`<button class="btn-primary" style="width:100%;margin-top:10px;font-size:12px;"
+    onclick="newIncidentFromStep('${stepId}')">+ Log Incident at This Step</button>`;
+  // STPA note (enhanced)
+  if(step.stpa){
+    body+=`<div class="stpa-note">
+      <div class="stpa-note-title">🔬 STAMP / STPA Perspective</div>
+      ${step.stpa}
+      <div style="margin-top:8px;font-size:10.5px;opacity:.75;">
+        Silvis-Cividjian et al. (Safety Sci. 2020) · Pawlicki et al. (Med Phys 2019) · Wong &amp; Pawlicki (JACMP 2025)
+      </div>
+    </div>`;
+  }
+  document.getElementById('pmd-body').innerHTML=body;
+}
+
+function closePMDetail(){document.getElementById('pm-detail').classList.remove('open');}
+
+/* ═══════════════════════════════════════════════════════
+   CUSTOM PROCESS MAP BUILDER
+═══════════════════════════════════════════════════════ */
+function addPMModalLane(){
+  const inp=document.getElementById('pnm-lane-input');const val=inp.value.trim();if(!val)return;
+  pmModalLanes.push(val);inp.value='';renderPMModalLanes();
+}
+function removePMModalLane(i){pmModalLanes.splice(i,1);renderPMModalLanes();}
+function renderPMModalLanes(){
+  document.getElementById('pnm-lanes').innerHTML=pmModalLanes.map((l,i)=>`
+    <div class="lane-tag">${l}<button onclick="removePMModalLane(${i})">✕</button></div>`).join('');
+}
+function savePMNew(){
+  const name=document.getElementById('pnm-name').value.trim();
+  if(!name){alert('Please enter a process name.');return;}
+  if(!pmModalLanes.length){alert('Add at least one role/lane.');return;}
+  const map={id:'PM'+Date.now(),name,desc:document.getElementById('pnm-desc').value,
+    lanes:[...pmModalLanes],steps:[],isBuiltIn:false};
+  db.processMaps.push(map);saveDB();pmModalLanes=[];renderPMModalLanes();
+  ['pnm-name','pnm-desc'].forEach(id=>document.getElementById(id).value='');
+  closeModal('pm-new-modal');renderPMSidebar();renderMap(map.id);
+}
+function deletePMMap(id){
+  if(!confirm('Delete this process map?'))return;
+  db.processMaps=db.processMaps.filter(m=>m.id!==id);
+  if(curMapId===id)curMapId=null;saveDB();renderPMSidebar();
+  document.getElementById('pm-svg-wrap').innerHTML='<div class="empty-st" style="padding-top:80px;"><div class="empty-st-icon">🗺️</div><p>Select or create a process map.</p></div>';
+  closePMDetail();
+}
+function openAddStepModal(mapId){
+  const map=resolveMapObj(mapId);if(!map||map.isBuiltIn)return;
+  document.getElementById('psm-mapid').value=mapId;
+  document.getElementById('psm-stepid').value='';
+  document.getElementById('psm-title').textContent='Add Process Step';
+  ['psm-label','psm-desc'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('psm-col').value=map.steps.length?Math.max(...map.steps.map(s=>parseInt(s.col)||1)):1;
+  const lsel=document.getElementById('psm-lane');
+  lsel.innerHTML=map.lanes.map(l=>`<option>${l}</option>`).join('');
+  populateFMEADropdown('psm-fmea','');
+  openModal('pm-step-modal');
+}
+function populateFMEADropdown(selId,curVal){
+  const sel=document.getElementById(selId);
+  sel.innerHTML='<option value="">None — no FMEA linked yet</option>';
+  db.fmea.forEach(p=>{
+    const opt=document.createElement('option');opt.value=p.id;
+    opt.textContent=p.name+(p.isTG100?' [TG-100]':'');
+    if(p.id===curVal)opt.selected=true;sel.appendChild(opt);
+  });
+}
+function savePMStep(){
+  const mapId=document.getElementById('psm-mapid').value;
+  const map=db.processMaps.find(m=>m.id===mapId);if(!map)return;
+  const editId=document.getElementById('psm-stepid').value;
+  const step={id:editId||'S'+Date.now(),
+    label:document.getElementById('psm-label').value||'Step',
+    col:parseInt(document.getElementById('psm-col').value)||1,
+    lane:document.getElementById('psm-lane').value,
+    fmeaId:document.getElementById('psm-fmea').value,
+    desc:document.getElementById('psm-desc').value};
+  if(editId){const i=map.steps.findIndex(s=>s.id===editId);if(i>=0)map.steps[i]=step;}
+  else map.steps.push(step);
+  saveDB();closeModal('pm-step-modal');renderMap(mapId);
+}
+
+/* ═══════════════════════════════════════════════════════
+   FMEA
+═══════════════════════════════════════════════════════ */
+function renderFmeaList(){
+  const c=document.getElementById('fmea-proj-list');
+  if(!db.fmea.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">📊</div>No projects</div>';return;}
+  c.innerHTML=db.fmea.map(p=>{
+    if(p.isSTPA){
+      const ucas=p.ucas||[];
+      const hiCount=ucas.filter(u=>u.priority==='High').length;
+      return `<div class="list-item ${curFmeaId===p.id?'sel':''}" onclick="openFmeaProject('${p.id}')">
+        <div class="li-title"><span style="background:#ede9fe;color:#5b21b6;padding:1px 6px;border-radius:6px;font-size:9.5px;font-weight:700;">STPA</span>
+          ${p.id.startsWith('STPA_LIT')||p.id==='STPA_HALCYON'||p.id==='STPA_IMRT'?'<span style="background:#fdf4ff;color:#7e22ce;padding:1px 5px;border-radius:6px;font-size:9.5px;font-weight:700;margin-left:3px;">📄 LIT</span>':''} ${p.name}</div>
+        <div class="li-sub">${p.dept||''} · ${ucas.length} UCA(s)</div>
+        <div class="li-meta">${hiCount?`<span class="badge br">${hiCount} High priority</span>`:''}</div>
+      </div>`;
+    }
+    const items=p.items||[];
+    const maxRPN=items.length?Math.max(...items.map(i=>parseInt(i.rpn)||0)):0;
+    const rc=maxRPN>100?'br':maxRPN>50?'by':'bg';
+    return `<div class="list-item ${curFmeaId===p.id?'sel':''}" onclick="openFmeaProject('${p.id}')">
+      <div class="li-title">${p.isTG100?'<span class="btg">TG-100</span> ':''}${['FMEA_EQUIP','FMEA_SRS_MANGER','FMEA_AI_CONTOUR'].includes(p.id)?'<span style="background:#fdf4ff;color:#7e22ce;padding:1px 5px;border-radius:6px;font-size:9.5px;font-weight:700;">📄 LIT</span> ':''}${p.name}</div>
+      <div class="li-sub">${p.dept||''} · ${items.length} FM(s)</div>
+      <div class="li-meta">${maxRPN?`<span class="badge ${rc}">Max RPN: ${maxRPN}</span>`:''}</div>
+    </div>`;}).join('');
+}
+function saveFmeaProject(){
+  const p={id:'FMEA'+Date.now(),name:document.getElementById('fp-name').value||'Untitled FMEA',
+    dept:document.getElementById('fp-dept').value,facilitator:document.getElementById('fp-fac').value,
+    date:document.getElementById('fp-date').value,version:document.getElementById('fp-ver').value,items:[]};
+  db.fmea.push(p);saveDB();closeModal('fmea-proj-modal');renderFmeaList();openFmeaProject(p.id);
+}
+function openFmeaProject(id){
+  curFmeaId=id;const p=db.fmea.find(x=>x.id===id);if(!p)return;
+  renderFmeaList();
+
+  // ── STPA project — render UCA table ──────────────────────────────────
+  if(p.isSTPA){
+    const ucas=p.ucas||[];
+    const typeLabel={'NG':'Not Given','GI':'Given Incorrectly','WT':'Wrong Timing','WD':'Wrong Duration'};
+    const typeCls={'NG':'uca-ng','GI':'uca-gi','WT':'uca-wt','WD':'uca-wd'};
+    const priCls={'High':'br','Medium':'by','Low':'bg'};
+
+    const hazardHTML=`<div class="stpa-hazards">${(p.hazards||[]).map(h=>`<span class="stpa-haz">${h}</span>`).join('')}</div>`;
+    const accidentHTML=(p.accidents||[]).map(a=>`<div style="font-size:11.5px;opacity:.85;margin-top:3px;">• ${a}</div>`).join('');
+
+    const ucaTable=!ucas.length?
+      `<div class="empty-st" style="padding:30px;"><div class="empty-st-icon">🔬</div><p>No UCAs defined yet.</p></div>`:
+      `<div class="uca-wrap"><table class="uca-table">
+      <thead><tr>
+        <th>#</th><th>Control Action</th><th>UCA Type</th>
+        <th>Unsafe Control Action</th><th>Hazard(s)</th>
+        <th>Causal Scenarios</th><th>Safety Constraint / Fix</th>
+        <th>Priority</th><th>Status</th>
+      </tr></thead><tbody>
+      ${ucas.map((u,n)=>{
+        const tc=typeCls[u.type]||'uca-ng';
+        const tl=typeLabel[u.type]||u.type;
+        const pc=priCls[u.priority]||'bb';
+        const sc={Open:'br','In Progress':'by',Completed:'bg','Accepted Risk':'bm'}[u.status]||'bb';
+        return `<tr>
+          <td style="color:var(--muted);font-size:10px;">${n+1}</td>
+          <td><strong>${u.controlAction||''}</strong></td>
+          <td><span class="uca-type ${tc}">${tl}</span></td>
+          <td>${u.uca||''}</td>
+          <td style="font-size:10.5px;color:#5b21b6;font-weight:600;">${(u.hazards||[]).join(', ')}</td>
+          <td style="font-size:11px;">${u.causalScenarios||''}</td>
+          <td style="font-size:11px;">${u.constraint||''}</td>
+          <td><span class="badge ${pc}">${u.priority||''}</span></td>
+          <td><span class="badge ${sc}">${u.status||'Open'}</span></td>
+        </tr>`;}).join('')}
+      </tbody></table></div>`;
+
+    const hiN=ucas.filter(u=>u.priority==='High').length;
+    const ngN=ucas.filter(u=>u.type==='NG').length;
+    const wtN=ucas.filter(u=>u.type==='WT').length;
+    const giN=ucas.filter(u=>u.type==='GI').length;
+
+    document.getElementById('fmea-main').innerHTML=`
+      <div class="stpa-proj-hd">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+          <div>
+            <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:#a78bfa;margin-bottom:4px;">
+              STPA — Systems-Theoretic Process Analysis
+              <span style="background:rgba(255,255,255,.15);padding:1px 7px;border-radius:8px;margin-left:6px;font-size:9.5px;">📄 Literature</span>
+            </div>
+            <h3>${p.name}</h3>
+            <p>${p.dept||''} · ${p.facilitator||''} · ${p.date||''} · ${p.version||''}</p>
+          </div>
+        </div>
+        ${p.accidents&&p.accidents.length?`<div style="margin-top:10px;"><div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#a78bfa;letter-spacing:.5px;margin-bottom:4px;">System-Level Accidents</div>${accidentHTML}</div>`:''}
+        ${hazardHTML}
+      </div>
+      ${p.note?`<div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:7px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#6b21a8;line-height:1.6;">📄 <strong>Source</strong> — ${p.note}</div>`:''}
+      <div style="background:#faf5ff;border:1px solid #e9d5ff;border-radius:8px;padding:12px 16px;margin-bottom:16px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#7c3aed;margin-bottom:8px;">UCA Type Legend</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:11px;">
+          <span><span class="uca-type uca-ng">Not Given</span> &nbsp;Required control action was absent</span>
+          <span><span class="uca-type uca-gi">Given Incorrectly</span> &nbsp;Wrong control action was provided</span>
+          <span><span class="uca-type uca-wt">Wrong Timing</span> &nbsp;Correct action but too early, too late, or out of order</span>
+          <span><span class="uca-type uca-wd">Wrong Duration</span> &nbsp;Action applied too long or stopped too soon</span>
+        </div>
+        <div style="margin-top:8px;font-size:10.5px;color:#7c3aed;line-height:1.5;">
+          ⚡ <strong>Key insight:</strong> Wrong Timing UCAs (${wtN} here) are the category STPA finds that FMEA misses —
+          they represent correct actions performed at the wrong time, which component-failure analysis cannot surface.
+        </div>
+      </div>
+      <div class="stpa-summary">
+        <div class="fmea-kpi" style="background:#fee2e2;"><div class="kpi-label">High Priority</div><div class="kpi-val" style="color:#991b1b;">${hiN}</div></div>
+        <div class="fmea-kpi" style="background:#ede9fe;"><div class="kpi-label">Wrong Timing</div><div class="kpi-val" style="color:#5b21b6;">${wtN}</div></div>
+        <div class="fmea-kpi" style="background:#fee2e2;"><div class="kpi-label">Not Given</div><div class="kpi-val" style="color:#991b1b;">${ngN}</div></div>
+        <div class="fmea-kpi" style="background:#fef3c7;"><div class="kpi-label">Given Incorrectly</div><div class="kpi-val" style="color:#92400e;">${giN}</div></div>
+        <div class="fmea-kpi" style="background:#f0f4f8;"><div class="kpi-label">Total UCAs</div><div class="kpi-val">${ucas.length}</div></div>
+      </div>
+      <div class="card" style="margin-top:16px;">
+        <div class="card-hd">
+          <div><h3 class="card-title">Unsafe Control Actions (UCAs)</h3>
+            <div class="card-sub">${ucas.length} UCAs identified</div></div>
+        </div>
+        ${ucaTable}
+      </div>`;
+    return;
+  }
+
+  // ── FMEA project — existing rendering ─────────────────────────────────
+  const items=p.items||[];
+  const maxRPN=items.length?Math.max(...items.map(i=>parseInt(i.rpn)||0)):0;
+  const tableHTML=!items.length?`<div class="empty-st" style="padding:30px;">
+    <div class="empty-st-icon">⚠️</div><p>No failure modes yet.</p></div>`:
+    `<div class="fmea-wrap"><table class="fmea-table">
+    <thead><tr><th>#</th><th>Step</th><th>Failure Mode</th><th>Effects</th>
+    <th>S</th><th>Cause(s)</th><th>O</th><th>Controls</th>
+    <th>D</th><th>RPN</th><th>Action</th><th>Owner</th>
+    <th>Due</th><th>Status</th><th></th></tr></thead><tbody>
+    ${items.map((it,n)=>{
+      const rc=parseInt(it.rpn)>100?'rpn-h':parseInt(it.rpn)>50?'rpn-m':'rpn-l';
+      const sc={Open:'br','In Progress':'by',Completed:'bg','Accepted Risk':'bm'}[it.status]||'bb';
+      return `<tr><td style="color:var(--muted);font-size:10px;">${n+1}</td>
+        <td>${it.step||''}</td><td><strong>${it.mode||''}</strong></td>
+        <td>${it.effect||''}</td><td class="score-c">${it.s||''}</td>
+        <td>${it.cause||''}</td><td class="score-c">${it.o||''}</td>
+        <td>${it.controls||''}</td><td class="score-c">${it.d||''}</td>
+        <td><span class="rpn-cell ${rc}">${it.rpn||''}</span></td>
+        <td>${it.action||''}</td><td>${it.responsible||''}</td>
+        <td>${it.due||''}</td>
+        <td><span class="badge ${sc}">${it.status||''}</span></td>
+        <td><button class="btn-icon" onclick="editFmeaItem('${it.id}')">✏️</button>
+            <button class="btn-icon" onclick="deleteFmeaItem('${it.id}')">🗑</button></td>
+      </tr>`;}).join('')}
+    </tbody></table></div>
+    <div class="fmea-summary">
+      <div class="fmea-kpi" style="background:var(--red-lt);"><div class="kpi-label">High &gt;100</div>
+        <div class="kpi-val" style="color:var(--red);">${items.filter(i=>parseInt(i.rpn)>100).length}</div></div>
+      <div class="fmea-kpi" style="background:var(--amber-lt);"><div class="kpi-label">Med 51–100</div>
+        <div class="kpi-val" style="color:var(--amber);">${items.filter(i=>parseInt(i.rpn)>50&&parseInt(i.rpn)<=100).length}</div></div>
+      <div class="fmea-kpi" style="background:var(--green-lt);"><div class="kpi-label">Low ≤50</div>
+        <div class="kpi-val" style="color:var(--green);">${items.filter(i=>parseInt(i.rpn)>0&&parseInt(i.rpn)<=50).length}</div></div>
+      <div class="fmea-kpi" style="background:#f0f4f8;"><div class="kpi-label">Max RPN</div>
+        <div class="kpi-val">${maxRPN}</div></div>
+    </div>`;
+  document.getElementById('fmea-main').innerHTML=`
+    <div class="card">
+      <div class="card-hd">
+        <div><h3 class="card-title">${p.isTG100?'<span class="btg">TG-100</span> ':''}${p.id==='FMEA_EQUIP'?'<span style="background:#fdf4ff;color:#7e22ce;padding:1px 5px;border-radius:6px;font-size:9.5px;font-weight:700;">📄 LIT</span> ':''}${p.name}</h3>
+          <div class="card-sub">${p.dept||''} · ${p.facilitator||''} · ${p.date||''} · ${p.version||''}</div></div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn-xs green" onclick="generateChecklist('${p.id}')" title="Export High/Medium RPN items as printable checklist">📋 Checklist</button>
+          <button class="btn-xs blue" onclick="openFmeaItemModal()">+ Add FM</button>
+          <button class="btn-del" onclick="deleteFmeaProject('${p.id}')">🗑</button>
+        </div>
+      </div>
+      ${p.note?`<div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:7px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#6b21a8;line-height:1.6;">📄 <strong>Literature Source</strong> — ${p.note}</div>`:''}
+      ${tableHTML}</div>`;
+}
+function openFmeaItemModal(editId){
+  document.getElementById('fi-id').value=editId||'';
+  document.getElementById('fi-modal-title').textContent=editId?'Edit Failure Mode':'Add Failure Mode';
+  if(editId){
+    const p=db.fmea.find(x=>x.id===curFmeaId);const it=p&&p.items.find(i=>i.id===editId);
+    if(it){const m={'fi-step':it.step,'fi-mode':it.mode,'fi-effect':it.effect,'fi-s':it.s,
+      'fi-cause':it.cause,'fi-o':it.o,'fi-ctrl':it.controls,'fi-d':it.d,'fi-rpn':it.rpn,
+      'fi-action':it.action,'fi-resp':it.responsible,'fi-due':it.due};
+      Object.entries(m).forEach(([k,v])=>document.getElementById(k).value=v||'');
+      document.getElementById('fi-status').value=it.status||'Open';}
+  }else{
+    ['fi-step','fi-mode','fi-effect','fi-s','fi-cause','fi-o','fi-ctrl','fi-d','fi-rpn','fi-action','fi-resp','fi-due']
+      .forEach(id=>document.getElementById(id).value='');
+    document.getElementById('fi-status').value='Open';
+  }
+  openModal('fmea-item-modal');
+}
+function editFmeaItem(id){openFmeaItemModal(id);}
+function deleteFmeaItem(id){
+  if(!confirm('Remove this failure mode?'))return;
+  const p=db.fmea.find(x=>x.id===curFmeaId);
+  if(p){p.items=p.items.filter(i=>i.id!==id);saveDB();openFmeaProject(curFmeaId);}
+}
+function deleteFmeaProject(id){
+  if(!confirm('Delete this FMEA project?'))return;
+  db.fmea=db.fmea.filter(p=>p.id!==id);curFmeaId=null;saveDB();renderFmeaList();
+  document.getElementById('fmea-main').innerHTML='<div class="empty-st" style="padding-top:80px;"><div class="empty-st-icon">⚠️</div><p>No project selected.</p></div>';
+}
+function calcRPN(){
+  const s=parseInt(document.getElementById('fi-s').value)||0;
+  const o=parseInt(document.getElementById('fi-o').value)||0;
+  const d=parseInt(document.getElementById('fi-d').value)||0;
+  document.getElementById('fi-rpn').value=(s&&o&&d)?s*o*d:'';
+}
+function saveFmeaItem(){
+  const p=db.fmea.find(x=>x.id===curFmeaId);if(!p){alert('No project selected.');return;}
+  const editId=document.getElementById('fi-id').value;
+  const s=parseInt(document.getElementById('fi-s').value)||0;
+  const o=parseInt(document.getElementById('fi-o').value)||0;
+  const d=parseInt(document.getElementById('fi-d').value)||0;
+  const it={id:editId||'FI'+Date.now(),step:document.getElementById('fi-step').value,
+    mode:document.getElementById('fi-mode').value,effect:document.getElementById('fi-effect').value,
+    s,cause:document.getElementById('fi-cause').value,o,controls:document.getElementById('fi-ctrl').value,
+    d,rpn:s*o*d,action:document.getElementById('fi-action').value,
+    responsible:document.getElementById('fi-resp').value,
+    due:document.getElementById('fi-due').value,status:document.getElementById('fi-status').value};
+  if(editId){const i=p.items.findIndex(x=>x.id===editId);if(i>=0)p.items[i]=it;}else p.items.push(it);
+  saveDB();closeModal('fmea-item-modal');openFmeaProject(curFmeaId);
+}
+
+/* ═══════════════════════════════════════════════════════
+   P&P
+═══════════════════════════════════════════════════════ */
+function renderPPList(){
+  const c=document.getElementById('pp-list');
+  if(!db.policies.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">📁</div>No policies</div>';return;}
+  const cls={'Active':'bg','Under Review':'by','Outdated':'br','Retired':'bb'};
+  c.innerHTML=db.policies.map(p=>`
+    <div class="list-item" onclick="viewPolicy('${p.id}')">
+      <div class="li-title">📄 ${p.name}</div><div class="li-sub">${p.file||''}</div>
+      <div class="li-meta"><span class="badge ${cls[p.status]||'bb'}">${p.status||''}</span>
+        ${p.nextReview&&new Date(p.nextReview)<new Date()?'<span class="badge br">⚠️ OVERDUE</span>':''}
+      </div></div>`).join('');
+}
+function viewPolicy(id){
+  const p=db.policies.find(x=>x.id===id);if(!p)return;
+  const overdue=p.nextReview&&new Date(p.nextReview)<new Date();
+  const cls={'Active':'bg','Under Review':'by','Outdated':'br','Retired':'bb'};
+  const linkedInc=db.incidents.filter(i=>(i.linkedPolicies||[]).includes(id));
+  const incBadge=linkedInc.length?`<span class="badge br" style="font-size:10.5px;">⚠️ ${linkedInc.length} linked incident${linkedInc.length>1?'s':''}</span>`:'';
+  document.getElementById('pp-main').innerHTML=`
+    <div class="card">
+      <div class="card-hd">
+        <div><h3 class="card-title">${p.name} ${incBadge}</h3>
+          <div class="card-sub">${p.dept||''} · ${p.version||''}</div></div>
+        <button class="btn-del" onclick="deletePolicy('${p.id}')">🗑 Remove</button>
+      </div>
+      ${linkedInc.length?`<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:10px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#991b1b;letter-spacing:.5px;margin-bottom:6px;">📋 Incidents Flagging This Policy for Review</div>
+        ${linkedInc.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <span style="font-size:10.5px;font-weight:700;color:#991b1b;">${i.id}</span>
+          <span style="font-size:11.5px;">${(i.what||'').substring(0,70)}…</span>
+          <button class="btn-link" onclick="viewIncident('${i.id}')" style="font-size:10.5px;flex-shrink:0;">→ Open</button>
+        </div>`).join('')}
+      </div>`:''}
+      <div class="info-grid">
+        <div><div class="ig-label">Document File</div><div class="ig-val">📄 ${p.file||'—'}</div></div>
+        <div><div class="ig-label">Owner</div><div class="ig-val">${p.owner||'—'}</div></div>
+        <div><div class="ig-label">Effective Date</div><div class="ig-val">${p.effective||'—'}</div></div>
+        <div><div class="ig-label">Next Review</div>
+          <div class="ig-val ${overdue?'overdue':''}">${p.nextReview||'—'} ${overdue?'⚠️ OVERDUE':''}</div></div>
+        <div><div class="ig-label">Status</div>
+          <div class="ig-val"><span class="badge ${cls[p.status]||'bb'}">${p.status||'—'}</span></div></div>
+        <div><div class="ig-label">Last Audited</div><div class="ig-val">${p.lastAudit||'Never'}</div></div>
+      </div>
+      <h4 style="margin:0 0 12px;font-size:13px;color:var(--navy);">Audit Record</h4>
+      <div class="fg"><label>Findings / Notes</label>
+        <textarea id="an-${id}" rows="4" placeholder="Document compliance findings, gaps, required updates…">${p.auditNotes||''}</textarea></div>
+      <div class="grid3">
+        <div class="fg"><label>Audit Date</label>
+          <input type="date" id="ad-${id}" value="${new Date().toISOString().slice(0,10)}"></div>
+        <div class="fg"><label>Update Status To</label>
+          <select id="as-${id}">
+            ${['Active','Under Review','Outdated','Retired'].map(s=>`<option ${p.status===s?'selected':''}>${s}</option>`).join('')}
+          </select></div>
+        <div class="fg"><label>Next Review Date</label>
+          <input type="date" id="ar-${id}" value="${p.nextReview||''}"></div>
+      </div>
+      <div class="form-footer"><button class="btn-save" onclick="saveAudit('${id}')">Save Audit</button></div>
+    </div>`;
+}
+function saveAudit(id){
+  const p=db.policies.find(x=>x.id===id);if(!p)return;
+  p.auditNotes=document.getElementById('an-'+id).value;
+  p.lastAudit=document.getElementById('ad-'+id).value;
+  p.status=document.getElementById('as-'+id).value;
+  p.nextReview=document.getElementById('ar-'+id).value;
+  saveDB();renderPPList();alert('Audit saved.');
+}
+function deletePolicy(id){
+  if(!confirm('Remove this policy?'))return;
+  db.policies=db.policies.filter(p=>p.id!==id);saveDB();renderPPList();
+  document.getElementById('pp-main').innerHTML=
+    '<div class="empty-st" style="padding-top:80px;"><div class="empty-st-icon">📁</div><p>Select a policy.</p></div>';
+}
+function savePolicy(){
+  db.policies.push({id:'PP'+Date.now(),
+    name:document.getElementById('pm-name').value||'Untitled Policy',
+    file:document.getElementById('pm-file').value,dept:document.getElementById('pm-dept').value,
+    version:document.getElementById('pm-ver').value,owner:document.getElementById('pm-owner').value,
+    effective:document.getElementById('pm-eff').value,nextReview:document.getElementById('pm-review').value,
+    status:document.getElementById('pm-status').value,auditNotes:'',lastAudit:''});
+  saveDB();closeModal('pp-modal');renderPPList();
+}
+
+/* ═══════════════════════════════════════════════════════
+   P&P LINKAGE — ILS ↔ Policy directory
+═══════════════════════════════════════════════════════ */
+function populatePPLinkChecks(selected){
+  const wrap=document.getElementById('pp-link-checks');
+  const btns=document.getElementById('pp-link-buttons');
+  if(!wrap)return;
+  if(!db.policies.length){
+    wrap.innerHTML='<span style="font-size:11px;color:var(--muted);">No policies in directory yet — add policies in the P&P Audit tab first.</span>';
+    btns.innerHTML='';return;
+  }
+  wrap.innerHTML=db.policies.map(p=>{
+    const checked=(selected||[]).includes(p.id);
+    const overdue=p.nextReview&&new Date(p.nextReview)<new Date();
+    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;">
+      <input type="checkbox" value="${p.id}" ${checked?'checked':''} style="width:14px;height:14px;cursor:pointer;" onchange="renderPPLinkButtons(getLinkedPolicies())">
+      <span>📄 ${p.name}</span>
+      ${overdue?'<span class="badge br" style="font-size:9px;">⚠️ Overdue</span>':''}
+      <span style="font-size:10.5px;color:var(--muted);">${p.status||''}</span>
+    </label>`;
+  }).join('');
+  // Build "→ Open" buttons for currently checked policies
+  renderPPLinkButtons(selected||[]);
+}
+
+function renderPPLinkButtons(ids){
+  const btns=document.getElementById('pp-link-buttons');
+  if(!btns||!ids.length){if(btns)btns.innerHTML='';return;}
+  btns.innerHTML=ids.map(id=>{
+    const p=db.policies.find(x=>x.id===id);if(!p)return'';
+    return `<button class="btn-xs" onclick="jumpToPolicy('${id}')"
+      style="font-size:10.5px;background:#eff6ff;color:#2563eb;border-color:#bfdbfe;">
+      → Open: ${p.name.length>30?p.name.slice(0,30)+'…':p.name}</button>`;
+  }).join('');
+}
+
+function getLinkedPolicies(){
+  const wrap=document.getElementById('pp-link-checks');
+  if(!wrap)return[];
+  return [...wrap.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
+}
+
+function jumpToPolicy(id){
+  showTab('pp');
+  setTimeout(()=>viewPolicy(id),80);
+}
+
+/* ═══════════════════════════════════════════════════════
+   FMEA → CHECKLIST EXTRACTION
+   Based on: Bakhtiari (PLOS Digital Health 2025) Fig 14
+   Role-separated, checkbox items, FM reference tags
+═══════════════════════════════════════════════════════ */
+function generateChecklist(fmeaId){
+  const p=db.fmea.find(x=>x.id===fmeaId);if(!p)return;
+  const items=(p.items||[]).filter(i=>(parseInt(i.rpn)||0)>50)
+    .sort((a,b)=>(parseInt(b.rpn)||0)-(parseInt(a.rpn)||0));
+  if(!items.length){alert('No High or Medium RPN items found (RPN > 50). Add failure modes first.');return;}
+
+  // Group by responsible role
+  const roles={};
+  items.forEach(it=>{
+    const role=it.responsible||'General';
+    if(!roles[role])roles[role]=[];
+    roles[role].push(it);
+  });
+
+  const today=new Date().toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+  const highCount=items.filter(i=>parseInt(i.rpn)>100).length;
+  const medCount=items.filter(i=>parseInt(i.rpn)>50&&parseInt(i.rpn)<=100).length;
+
+  let roleHTML='';
+  Object.entries(roles).forEach(([role,its])=>{
+    roleHTML+=`
+    <div class="role-section">
+      <div class="role-header">👤 ${role}</div>
+      <table class="cl-table">
+        <thead><tr>
+          <th style="width:32px;">✓</th>
+          <th style="width:56px;">Ref</th>
+          <th>Process Step</th>
+          <th>Critical Check / Action</th>
+          <th style="width:80px;">RPN</th>
+          <th>Potential Effect if Missed</th>
+        </tr></thead>
+        <tbody>
+          ${its.map(it=>`<tr class="${parseInt(it.rpn)>100?'high-row':'med-row'}">
+            <td class="check-cell"><div class="checkbox"></div></td>
+            <td class="ref-cell">[${it.id}]</td>
+            <td>${it.step||''}</td>
+            <td><strong>${it.action||it.mode||''}</strong></td>
+            <td class="rpn-cell-cl ${parseInt(it.rpn)>100?'rpn-h-cl':'rpn-m-cl'}">${it.rpn}</td>
+            <td class="effect-cell">${it.effect||''}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>`;
+  });
+
+  // Strip the outer HTML shell — just inject the body content + styles
+  const modal=document.getElementById('checklist-modal');
+  const body=document.getElementById('checklist-body');
+
+  // Inject print-scoped styles into the modal
+  body.innerHTML=`
+    <style>
+      @media print{
+        #checklist-modal>div>div:first-child{display:none!important;}
+        nav,.toolbar,.main{display:none!important;}
+        #checklist-modal{position:fixed;inset:0;padding:16px;}
+      }
+      .cl-draft-banner{background:#fef3c7;border:2px solid #f59e0b;border-radius:8px;padding:12px 20px;
+        margin-bottom:20px;display:flex;align-items:center;gap:12px;}
+      .cl-draft-stamp{font-size:22px;font-weight:900;color:#92400e;letter-spacing:2px;flex-shrink:0;}
+      .cl-draft-text{font-size:11.5px;color:#78350f;line-height:1.6;}
+      .cl-doc-header{border-bottom:3px solid #1e3a5f;padding-bottom:14px;margin-bottom:18px;}
+      .cl-doc-title{font-size:20px;font-weight:700;color:#1e3a5f;margin:0 0 4px;}
+      .cl-doc-meta{font-size:11px;color:#64748b;display:flex;gap:20px;flex-wrap:wrap;margin-top:6px;}
+      .cl-kpi-row{display:flex;gap:12px;margin-bottom:20px;flex-wrap:wrap;}
+      .cl-kpi{border-radius:6px;padding:8px 16px;text-align:center;min-width:80px;}
+      .cl-kpi-label{font-size:9px;text-transform:uppercase;letter-spacing:.5px;font-weight:700;margin-bottom:2px;}
+      .cl-kpi-val{font-size:20px;font-weight:700;}
+      .cl-kpi-high{background:#fee2e2;color:#991b1b;}
+      .cl-kpi-med{background:#fef3c7;color:#92400e;}
+      .cl-kpi-total{background:#eff6ff;color:#1e40af;}
+      .cl-kpi-role{background:#f0fdf4;color:#166534;}
+      .cl-role-section{margin-bottom:24px;}
+      .cl-role-header{background:#1e3a5f;color:#fff;padding:8px 14px;font-size:12px;font-weight:700;
+        border-radius:6px 6px 0 0;letter-spacing:.3px;}
+      .cl-table{width:100%;border-collapse:collapse;font-size:11px;}
+      .cl-table th{background:#f0f4f8;color:#475569;padding:6px 8px;text-align:left;
+        border-bottom:2px solid #cbd5e1;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;}
+      .cl-table td{padding:7px 8px;border-bottom:1px solid #f1f5f9;vertical-align:top;}
+      .cl-high-row td{background:#fff8f8;}
+      .cl-med-row td{background:#fffff8;}
+      .cl-check-cell{text-align:center;}
+      .cl-checkbox{width:14px;height:14px;border:2px solid #64748b;border-radius:3px;display:inline-block;}
+      .cl-ref-cell{font-weight:700;color:#5b21b6;font-size:10px;white-space:nowrap;}
+      .cl-rpn-h{background:#fee2e2;color:#991b1b;text-align:center;font-weight:700;border-radius:4px;padding:2px 6px;display:inline-block;}
+      .cl-rpn-m{background:#fef3c7;color:#92400e;text-align:center;font-weight:700;border-radius:4px;padding:2px 6px;display:inline-block;}
+      .cl-effect-cell{font-size:10.5px;color:#64748b;}
+      .cl-footer{margin-top:24px;padding:12px 16px;background:#f8fafc;border:1px solid #e2e8f0;
+        border-radius:6px;font-size:10.5px;color:#64748b;line-height:1.6;}
+      .cl-sig-row{display:flex;gap:40px;margin-top:24px;flex-wrap:wrap;}
+      .cl-sig-block{flex:1;min-width:180px;}
+      .cl-sig-line{border-bottom:1px solid #94a3b8;margin-bottom:4px;height:36px;}
+      .cl-sig-label{font-size:9.5px;color:#64748b;text-transform:uppercase;letter-spacing:.5px;}
+    </style>
+
+    <div class="cl-draft-banner">
+      <div class="cl-draft-stamp">⚠ DRAFT</div>
+      <div class="cl-draft-text"><strong>This checklist is a DRAFT generated from FMEA data and requires clinical review before use.</strong>
+      It is NOT a validated policy or procedure. Each item must be reviewed by qualified clinical staff,
+      adapted to your institutional workflow, and approved by the responsible physician and physicist
+      before implementation. Reference: TG-100 (Huq et al., Med Phys 2016); Bakhtiari (PLOS Digital Health 2025).</div>
+    </div>
+
+    <div class="cl-doc-header">
+      <div class="cl-doc-title">Safety Checklist — ${p.name}</div>
+      <div class="cl-doc-meta">
+        <span>📋 FMEA: <strong>${p.id}</strong></span>
+        <span>📅 ${today}</span>
+        <span>🏥 ${p.dept||'Radiation Oncology'}</span>
+        <span>👤 ${p.facilitator||'—'}</span>
+        <span>📌 Items shown: RPN &gt; 50 only</span>
+      </div>
+    </div>
+
+    <div class="cl-kpi-row">
+      <div class="cl-kpi cl-kpi-high"><div class="cl-kpi-label">High RPN &gt;100</div><div class="cl-kpi-val">${highCount}</div></div>
+      <div class="cl-kpi cl-kpi-med"><div class="cl-kpi-label">Med RPN 51–100</div><div class="cl-kpi-val">${medCount}</div></div>
+      <div class="cl-kpi cl-kpi-total"><div class="cl-kpi-label">Total Items</div><div class="cl-kpi-val">${items.length}</div></div>
+      <div class="cl-kpi cl-kpi-role"><div class="cl-kpi-label">Roles</div><div class="cl-kpi-val">${Object.keys(roles).length}</div></div>
+    </div>
+
+    ${roleHTML}
+
+    <div class="cl-footer">
+      <strong>How to use:</strong> Each [FM##] tag links to the source failure mode in the FMEA project.
+      Items are ordered by RPN within each role. High RPN items (red) are the highest-priority verification points.
+      Review and update this checklist whenever: (1) an incident is linked to a step in this process,
+      (2) the FMEA is updated with new failure modes or revised scores, or (3) at the scheduled P&amp;P review date.
+      <br><strong>Source methodology:</strong> TG-100 (Huq et al., Med Phys 2016) · Bakhtiari (PLOS Digital Health 2025, Fig 14)
+    </div>
+
+    <div class="cl-sig-row">
+      <div class="cl-sig-block"><div class="cl-sig-line"></div><div class="cl-sig-label">Reviewed by (Physicist)</div></div>
+      <div class="cl-sig-block"><div class="cl-sig-line"></div><div class="cl-sig-label">Reviewed by (Physician)</div></div>
+      <div class="cl-sig-block"><div class="cl-sig-line"></div><div class="cl-sig-label">Approved for Clinical Use</div></div>
+      <div class="cl-sig-block"><div class="cl-sig-line"></div><div class="cl-sig-label">Date</div></div>
+    </div>`;
+
+  modal.style.display='block';
+  modal.scrollTop=0;
+}
+
+/* ═══════════════════════════════════════════════════════
+   MODALS + INIT
+═══════════════════════════════════════════════════════ */
+function openModal(id){document.getElementById(id).classList.add('open');}
+function closeModal(id){document.getElementById(id).classList.remove('open');}
+document.querySelectorAll('.modal-bg').forEach(bg=>
+  bg.addEventListener('click',e=>{if(e.target===bg)bg.classList.remove('open');}));
+
+window.onload=()=>{
+  loadDB();
+  const hasData=db.incidents.length||db.fmea.length||db.policies.length||db.huddles.length||db.processMaps.length;
+  if(hasData){
+    document.getElementById('sync-overlay').style.display='none';
+    refreshAll();updateBar();
+  }
+  document.getElementById('fp-date').value=new Date().toISOString().slice(0,10);
+};
+</script>
+</body>
+</html>
