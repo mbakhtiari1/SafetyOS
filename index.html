@@ -387,14 +387,14 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
       <div id="huddle-form-view">
         <div class="card">
           <div class="card-hd">
-            <div><h3 class="card-title">📋 New Daily Huddle</h3>
+            <div><h3 class="card-title">📋 New Huddle</h3>
               <div class="card-sub" id="huddle-date"></div></div>
           </div>
           <p style="font-size:12.5px;color:var(--muted);margin:0 0 10px;">Yesterday's incidents — click to open in ILS.</p>
           <div id="huddle-feed"></div>
           <hr class="divider">
           <div class="grid2">
-            <div class="fg"><label>📅 Huddle Date</label><input type="date" id="h-date"></div>
+            <div class="fg"><label>📅 Huddle Date</label><input type="date" id="h-date" onchange="onHuddleDateChange()"></div>
             <div class="fg"><label>👥 Attendees</label><input type="text" id="h-attendees" placeholder="Names / roles present"></div>
             <div class="fg" style="grid-column:1/-1">
               <label>⚡ Anticipated Risks / Tomorrow's Concerns</label>
@@ -405,7 +405,10 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
               <textarea id="h-actions" rows="2" placeholder="Owner · action · deadline for each item…"></textarea>
             </div>
           </div>
-          <div class="form-footer"><button class="btn-save" onclick="saveHuddle()">Log Huddle</button></div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;">
+            <button class="btn-save" id="huddle-save-btn" onclick="saveHuddle()">Log Huddle</button>
+            <span id="huddle-date-hint" style="font-size:11.5px;color:var(--muted);font-style:italic;"></span>
+          </div>
         </div>
       </div>
     </div>
@@ -424,7 +427,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
       <span style="font-size:10.5px;color:var(--muted);margin-left:8px;">Click any step to inspect</span>
     </div>
     <div style="display:flex;gap:8px;">
-      <button class="btn-xs amber" onclick="loadTG100Templates();renderPMSidebar();">⚡ TG-100 Templates</button>
+      <button class="btn-xs amber tg100-btn" onclick="loadTG100Templates();renderPMSidebar();">⚡ TG-100 Templates</button>
       <button class="btn-xs blue" onclick="openModal('pm-new-modal')">+ New Process Map</button>
     </div>
   </div>
@@ -442,7 +445,7 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
         <div class="empty-st" style="padding-top:80px;">
           <div class="empty-st-icon">🗺️</div>
           <p style="margin-bottom:16px;">Select a map or create one.<br>Load TG-100 templates for a pre-built RT workflow.</p>
-          <button class="btn-primary" onclick="loadTG100Templates();renderPMSidebar();">⚡ Load TG-100 Templates</button>
+          <button class="btn-primary tg100-btn" onclick="loadTG100Templates();renderPMSidebar();">⚡ Load TG-100 Templates</button>
         </div>
       </div>
     </div>
@@ -1164,6 +1167,10 @@ function importCSV(text){
         else if(obj.severity)obj.eventType='incident';
       }
     }
+    if(sec==='huddles'){
+      obj.linkedIncidents=obj.linkedIncidents?obj.linkedIncidents.split('|').filter(Boolean):[];
+      obj.linkedPolicies=obj.linkedPolicies?obj.linkedPolicies.split('|').filter(Boolean):[];
+    }
     if(res[sec])res[sec].push(obj);
   }
   return res;
@@ -1818,28 +1825,77 @@ function loadLiteratureExamples(silent=false){
     addedFmea++;
   }
 
-  if(addedInc===0&&addedFmea===0){
+  // ── SRS Process Map — linked to FMEA_SRS_MANGER ──────────────────────────
+  let addedMap=0;
+  if(!db.processMaps.find(m=>m.id==='PM_SRS_MANGER')){
+    db.processMaps.push({
+      id:'PM_SRS_MANGER',
+      name:'SRS Workflow — Surface-Guided Cranial (Manger 2015)',
+      desc:'Intracranial SRS end-to-end process map linked to Manger et al. (Med Phys 2015) FMEA. Steps color-coded by RPN from FMEA_SRS_MANGER. Source: Manger RP, Paxton AB, Pawlicki T, Kim GY. Med Phys. 2015;42(5):2449–2461.',
+      lanes:['Radiation Oncologist','Medical Physicist','Radiation Therapist'],
+      isBuiltIn:false,
+      isLIT:true,
+      steps:[
+        {id:'SRS01',col:1,lane:'Radiation Oncologist',label:'SRS Consult\n& Rx',fmeaId:'FMEA_SRS_MANGER',
+         desc:'Physician evaluates patient for SRS candidacy, defines target and OAR dose constraints, writes prescription with isocenter intent.'},
+        {id:'SRS02',col:2,lane:'Radiation Therapist',label:'Mask\nFabrication',fmeaId:'FMEA_SRS_MANGER',
+         desc:'Thermoplastic immobilization mask fabricated and fit-verified. FMEA MS02: suboptimal mask fit is a significant risk (RPN 81).'},
+        {id:'SRS03',col:2,lane:'Radiation Therapist',label:'CT\nSimulation',fmeaId:'FMEA_SRS_MANGER',
+         desc:'CT acquired with SRS setup. Isocenter marked relative to documented landmark. FMEA MS01: wrong patient positioned (RPN 20).'},
+        {id:'SRS04',col:3,lane:'Radiation Oncologist',label:'Target\nContouring',fmeaId:'FMEA_SRS_MANGER',
+         desc:'GTV, PTV, and critical structure delineation on planning CT ± MRI fusion.'},
+        {id:'SRS05',col:3,lane:'Radiation Therapist',label:'SGRT Reference\nSurface',fmeaId:'FMEA_SRS_MANGER',
+         desc:'SGRT reference surface acquired from CT. FMEA MS03: incorrect reference surface loaded is highest-consequence failure at this step (RPN 108).'},
+        {id:'SRS06',col:4,lane:'Medical Physicist',label:'SRS\nPlanning',fmeaId:'FMEA_SRS_MANGER',
+         desc:'VMAT/IMRS arc optimization. Dose-volume constraints verified against prescription. FMEA MS07: wrong plan in R&V (RPN 40).'},
+        {id:'SRS07',col:5,lane:'Medical Physicist',label:'Physics\nChart Review',fmeaId:'FMEA_SRS_MANGER',
+         desc:'MU verification, CBCT fusion review, plan transfer integrity check. FMEA MS04: incorrect CBCT fusion (RPN 40).'},
+        {id:'SRS08',col:5,lane:'Radiation Oncologist',label:'Plan\nApproval',fmeaId:'FMEA_SRS_MANGER',
+         desc:'Physician reviews and approves dose distribution, isocenter location, and critical structure doses.'},
+        {id:'SRS09',col:6,lane:'Medical Physicist',label:'Patient-Specific\nQA',fmeaId:'FMEA_SRS_MANGER',
+         desc:'Pre-treatment measurement verification with independent dosimetry system.'},
+        {id:'SRS10',col:7,lane:'Radiation Therapist',label:'Pre-Tx\nTimeout',fmeaId:'FMEA_SRS_MANGER',
+         desc:'SRS-specific timeout checklist: patient ID, isocenter landmark, active reference surface, arc sequence. FMEA MS05: highest RPN in the SRS workflow (RPN 150) — no hard interlock exists.'},
+        {id:'SRS11',col:7,lane:'Medical Physicist',label:'CBCT\nLocalization',fmeaId:'FMEA_SRS_MANGER',
+         desc:'CBCT acquired; fusion reviewed and approved by physicist; couch shift applied and verified. FMEA MS04 applies.'},
+        {id:'SRS12',col:8,lane:'Radiation Therapist',label:'Treatment\nDelivery',fmeaId:'FMEA_SRS_MANGER',
+         desc:'VMAT arc delivery. SGRT monitors intrafraction motion. FMEA MS06: SGRT threshold exceedance not acted upon (RPN 54).'},
+        {id:'SRS13',col:9,lane:'Medical Physicist',label:'Post-Tx\nDocumentation',fmeaId:'FMEA_SRS_MANGER',
+         desc:'Delivery record, IGRT data, intrafraction motion log, any deviation documentation. FMEA MS08: deviations not documented (RPN 84).'},
+      ]
+    });
+    addedMap++;
+  }
+
+  if(addedInc===0&&addedFmea===0&&addedMap===0){
     if(!silent)alert('Literature examples are already loaded.');return;
   }
   saveDB();refreshILSList();renderCauseDist();renderFmeaList();
-  if(!silent)alert('✅ Loaded '+addedInc+' literature incident example(s) and '+addedFmea+' literature risk assessment project(s).\n\n'+
+  if(document.getElementById('pm').classList.contains('active'))renderPMSidebar();
+  if(!silent)alert('✅ Loaded '+addedInc+' literature incident example(s), '+addedFmea+' literature risk assessment project(s), and '+addedMap+' process map(s).\n\n'+
     'ILS: LIT001 · LIT002 · LIT003\n\n'+
     'Risk Assessment:\n'+
     '  FMEA: SRS Surface-Guided Cranial (Manger et al. Med Phys 2015)\n'+
     '  FMEA: AI Auto-Contouring & Automated Planning (Nealon et al. PRO 2022)\n'+
     '  FMEA: New Technology Implementation (Pawlicki 2019)\n'+
     '  STPA: RT Clinical Operations / Halcyon (Pawlicki 2019)\n'+
-    '  STPA: IMRT UCAs FMEA Missed (Silvis-Cividjian 2020)');
+    '  STPA: IMRT UCAs FMEA Missed (Silvis-Cividjian 2020)\n\n'+
+    'Process Maps:\n'+
+    '  SRS Workflow — Surface-Guided Cranial (Manger 2015) ← linked to SRS FMEA');
 }
 
 
 function loadTG100Templates(){
   const templates=buildTG100Templates();let added=0;
   templates.forEach(t=>{if(!db.fmea.find(p=>p.id===t.id)){db.fmea.push(t);added++;}});
-  if(added===0){alert('TG-100 templates already loaded.');return;}
   saveDB();renderFmeaList();
   if(document.getElementById('pm').classList.contains('active'))renderPMSidebar();
-  alert('✅ Loaded '+added+' TG-100 FMEA templates. Process map steps now show risk colors.');
+  // Update button states
+  document.querySelectorAll('.tg100-btn').forEach(btn=>{
+    btn.textContent='✅ TG-100 Templates Loaded';
+    btn.disabled=true;btn.style.opacity='0.6';
+  });
+  if(added>0) alert('✅ Loaded '+added+' TG-100 FMEA templates.\nProcess map steps now show risk colors based on RPN.');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1854,9 +1910,21 @@ function showTab(id){
   else if(id==='ils'){populateStepLinkDropdown();populatePPLinkChecks([]);renderCauseDist();}
   else refreshAll();
 }
+function updateTG100BtnState(){
+  const loaded=db.fmea.some(p=>p.isTG100);
+  document.querySelectorAll('.tg100-btn').forEach(btn=>{
+    if(loaded){
+      btn.textContent=btn.classList.contains('btn-primary')?'✅ TG-100 Templates Loaded':'✅ TG-100 Loaded';
+      btn.disabled=true;btn.style.opacity='0.6';
+    } else {
+      btn.textContent=btn.classList.contains('btn-primary')?'⚡ Load TG-100 Templates':'⚡ TG-100 Templates';
+      btn.disabled=false;btn.style.opacity='1';
+    }
+  });
+}
 function refreshAll(){
   refreshHuddle();refreshHuddleLog();refreshILSList();renderCauseDist();
-  renderFmeaList();renderPPList();
+  renderFmeaList();renderPPList();updateTG100BtnState();
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -1908,33 +1976,96 @@ function viewHuddle(id){
     </div>
     ${h.tomorrow?`<div style="margin-bottom:14px;"><div class="ig-label" style="margin-bottom:6px;">⚡ Anticipated Risks</div>
       <div style="background:#fffbeb;border:1px solid #fde68a;border-radius:6px;padding:12px;font-size:12.5px;line-height:1.6;">${h.tomorrow.replace(/\n/g,'<br>')}</div></div>`:''}
-    ${h.actions?`<div><div class="ig-label" style="margin-bottom:6px;">✅ Actions Assigned</div>
+    ${h.actions?`<div style="margin-bottom:14px;"><div class="ig-label" style="margin-bottom:6px;">✅ Actions Assigned</div>
       <div style="background:var(--teal-lt);border:1px solid #a7f3d0;border-radius:6px;padding:12px;font-size:12.5px;line-height:1.6;">${h.actions.replace(/\n/g,'<br>')}</div></div>`:''}
-    <div class="form-footer"><button class="btn-del" onclick="deleteHuddle('${h.id}')">🗑 Delete</button></div>
+    <div class="form-footer" style="display:flex;gap:8px;justify-content:space-between;align-items:center;">
+      <div>
+        <button class="btn-save" style="margin-right:6px;" onclick="loadHuddleForEdit('${h.id}')">✏️ Edit</button>
+        <button class="btn-ghost" onclick="showHuddleForm()">+ New Huddle</button>
+      </div>
+      <div>
+        <button class="btn-del" id="del-huddle-btn-${h.id}" onclick="confirmDeleteHuddle('${h.id}')">🗑 Delete</button>
+        <span id="del-huddle-confirm-${h.id}" style="display:none;margin-left:10px;font-size:12px;">
+          Sure? <button class="btn-del" style="padding:3px 10px;font-size:11px;" onclick="deleteHuddle('${h.id}')">Yes, delete</button>
+          <button class="btn-ghost" style="padding:3px 10px;font-size:11px;margin-left:4px;" onclick="document.getElementById('del-huddle-confirm-${h.id}').style.display='none';document.getElementById('del-huddle-btn-${h.id}').style.display='inline-block';">Cancel</button>
+        </span>
+      </div>
+    </div>
   </div>`;
   document.querySelectorAll('.huddle-log-item').forEach(el=>el.classList.remove('sel'));
   const sel=document.querySelector(`.huddle-log-item[onclick="viewHuddle('${id}')"]`);
   if(sel)sel.classList.add('sel');
 }
+function loadHuddleForEdit(id){
+  const h=db.huddles.find(x=>x.id===id);if(!h)return;
+  document.getElementById('huddle-detail-view').style.display='none';
+  document.getElementById('huddle-form-view').style.display='block';
+  document.getElementById('h-date').value=h.date;
+  document.getElementById('h-attendees').value=h.attendees||'';
+  document.getElementById('h-tomorrow').value=h.tomorrow||'';
+  document.getElementById('h-actions').value=h.actions||'';
+  const btn=document.getElementById('huddle-save-btn');
+  if(btn)btn.textContent='Update Huddle';
+  const hint=document.getElementById('huddle-date-hint');
+  if(hint){hint.textContent='✏️ Editing huddle for '+h.date;hint.style.color='#d97706';}
+  document.querySelectorAll('.huddle-log-item').forEach(el=>el.classList.remove('sel'));
+}
+function onHuddleDateChange(){
+  const d=document.getElementById('h-date').value;
+  const existing=db.huddles.find(h=>h.date===d);
+  const btn=document.getElementById('huddle-save-btn');
+  const hint=document.getElementById('huddle-date-hint');
+  if(existing){
+    document.getElementById('h-attendees').value=existing.attendees||'';
+    document.getElementById('h-tomorrow').value=existing.tomorrow||'';
+    document.getElementById('h-actions').value=existing.actions||'';
+    btn.textContent='Update Huddle';
+    hint.textContent='✏️ A huddle exists for this date — editing it.';
+    hint.style.color='#d97706';
+  } else {
+    document.getElementById('h-attendees').value='';
+    document.getElementById('h-tomorrow').value='';
+    document.getElementById('h-actions').value='';
+    btn.textContent='Log Huddle';
+    hint.textContent='';
+  }
+}
 function showHuddleForm(){
   document.getElementById('huddle-detail-view').style.display='none';
   document.getElementById('huddle-form-view').style.display='block';
   document.querySelectorAll('.huddle-log-item').forEach(el=>el.classList.remove('sel'));
+  const hint=document.getElementById('huddle-date-hint');
+  if(hint)hint.textContent='';
+  const btn=document.getElementById('huddle-save-btn');
+  if(btn)btn.textContent='Log Huddle';
+  onHuddleDateChange();
+}
+function confirmDeleteHuddle(id){
+  document.getElementById('del-huddle-btn-'+id).style.display='none';
+  document.getElementById('del-huddle-confirm-'+id).style.display='inline';
 }
 function deleteHuddle(id){
-  if(!confirm('Delete this huddle record?'))return;
-  db.huddles=db.huddles.filter(h=>h.id!==id);saveDB();refreshHuddleLog();showHuddleForm();
+  db.huddles=db.huddles.filter(h=>h.id!==id);
+  saveDB();refreshHuddleLog();showHuddleForm();
 }
 function saveHuddle(){
   const d=document.getElementById('h-date').value;
   if(!d){alert('Please select a huddle date.');return;}
+  const existing=db.huddles.find(h=>h.date===d);
+  if(existing){
+    existing.attendees=document.getElementById('h-attendees').value;
+    existing.tomorrow=document.getElementById('h-tomorrow').value;
+    existing.actions=document.getElementById('h-actions').value;
+    existing.timestamp=new Date().toISOString();
+    saveDB();refreshHuddleLog();alert('Huddle for '+d+' updated.');
+    return;
+  }
   db.huddles.push({id:'H'+Date.now(),date:d,
     attendees:document.getElementById('h-attendees').value,
     tomorrow:document.getElementById('h-tomorrow').value,
     actions:document.getElementById('h-actions').value,
     timestamp:new Date().toISOString()});
-  saveDB();['h-attendees','h-tomorrow','h-actions'].forEach(id=>document.getElementById(id).value='');
-  refreshHuddleLog();alert('Huddle logged.');
+  saveDB();refreshHuddleLog();alert('Huddle logged.');
 }
 
 /* ═══════════════════════════════════════════════════════
@@ -2113,7 +2244,7 @@ function renderPMSidebar(){
   if(!allMaps.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">🗺️</div>No maps</div>';return;}
   c.innerHTML=allMaps.map(m=>`
     <div class="pm-map-item ${curMapId===m.id?'sel':''}" onclick="renderMap('${m.id}')">
-      <div class="li-title">${m.isBuiltIn?'🔒 ':''}${m.name}</div>
+      <div class="li-title">${m.isBuiltIn?'🔒 ':''}${m.isLIT?'<span style="background:#fdf4ff;color:#7e22ce;padding:1px 5px;border-radius:6px;font-size:9.5px;font-weight:700;margin-right:3px;">📄 LIT</span>':''}${m.name}</div>
       <div class="li-sub">${m.lanes?m.lanes.length+' lanes · ':''} ${m.steps?m.steps.length+' steps':''}</div>
     </div>`).join('');
 }
@@ -2470,7 +2601,21 @@ function openFmeaProject(id){
             <div class="card-sub">${ucas.length} UCAs identified</div></div>
         </div>
         ${ucaTable}
+      </div>
+      <div class="card" style="margin-top:16px;border-top:3px solid #0f766e;">
+        <div class="card-hd" style="padding-bottom:8px;">
+          <div>
+            <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#0f766e;">🔗 Policies to Review Based on UCA Findings</div>
+            <div style="font-size:11.5px;color:var(--muted);margin-top:4px;">Flag policies that these unsafe control actions imply should be reviewed. This closes the PDSA loop: STPA → Plan (P&P).</div>
+          </div>
+        </div>
+        <div id="fmea-pp-link-checks"></div>
+        <div id="fmea-pp-link-buttons" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+        <button class="btn-xs" style="margin-top:10px;background:#f0fdfa;color:#0f766e;border-color:#99f6e4;"
+          onclick="saveFmeaPPLinks('${p.id}')">💾 Save Policy Links</button>
       </div>`;
+    // Populate STPA P&P links using the same mechanism as FMEA
+    populateFmeaPPLinkChecks('${p.id}', p.linkedPolicies||[]);
     return;
   }
 
@@ -2522,7 +2667,22 @@ function openFmeaProject(id){
         </div>
       </div>
       ${p.note?`<div style="background:#fdf4ff;border:1px solid #e9d5ff;border-radius:7px;padding:10px 14px;margin-bottom:16px;font-size:11.5px;color:#6b21a8;line-height:1.6;">📄 <strong>Literature Source</strong> — ${p.note}</div>`:''}
-      ${tableHTML}</div>`;
+      ${tableHTML}
+      <div style="border-top:1px solid #e2e8f0;margin-top:16px;padding-top:14px;">
+        <div style="font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:#0f766e;margin-bottom:8px;">
+          🔗 Policies to Review Based on FMEA Findings
+        </div>
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:10px;">
+          Flag any policy that high-RPN findings in this FMEA imply should be reviewed or updated. This closes the PDSA loop: Risk Assessment → Plan (P&P).
+        </div>
+        <div id="fmea-pp-link-checks"></div>
+        <div id="fmea-pp-link-buttons" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+        <button class="btn-xs" style="margin-top:10px;background:#f0fdfa;color:#0f766e;border-color:#99f6e4;"
+          onclick="saveFmeaPPLinks('${p.id}')">💾 Save Policy Links</button>
+      </div>
+    </div>`;
+  // Populate the FMEA-scoped P&P checklist
+  populateFmeaPPLinkChecks('${p.id}', p.linkedPolicies||[]);
 }
 function openFmeaItemModal(editId){
   document.getElementById('fi-id').value=editId||'';
@@ -2581,32 +2741,50 @@ function renderPPList(){
   const c=document.getElementById('pp-list');
   if(!db.policies.length){c.innerHTML='<div class="empty-st"><div class="empty-st-icon">📁</div>No policies</div>';return;}
   const cls={'Active':'bg','Under Review':'by','Outdated':'br','Retired':'bb'};
-  c.innerHTML=db.policies.map(p=>`
-    <div class="list-item" onclick="viewPolicy('${p.id}')">
-      <div class="li-title">📄 ${p.name}</div><div class="li-sub">${p.file||''}</div>
-      <div class="li-meta"><span class="badge ${cls[p.status]||'bb'}">${p.status||''}</span>
-        ${p.nextReview&&new Date(p.nextReview)<new Date()?'<span class="badge br">⚠️ OVERDUE</span>':''}
-      </div></div>`).join('');
+  c.innerHTML=db.policies.map(p=>{
+    const incCount=db.incidents.filter(i=>(i.linkedPolicies||[]).includes(p.id)).length;
+    const fmeaCount=db.fmea.filter(f=>(f.linkedPolicies||[]).includes(p.id)).length;
+    const overdue=p.nextReview&&new Date(p.nextReview)<new Date();
+    return `<div class="list-item" onclick="viewPolicy('${p.id}')">
+      <div class="li-title">📄 ${p.name}</div>
+      <div class="li-sub">${p.file||''}</div>
+      <div class="li-meta">
+        <span class="badge ${cls[p.status]||'bb'}">${p.status||''}</span>
+        ${overdue?'<span class="badge br">⚠️ OVERDUE</span>':''}
+        ${incCount?`<span class="badge br" style="font-size:9.5px;">🔍 ${incCount} inc</span>`:''}
+        ${fmeaCount?`<span class="badge by" style="font-size:9.5px;">⚠️ ${fmeaCount} FMEA/STPA</span>`:''}
+      </div></div>`;
+  }).join('');
 }
 function viewPolicy(id){
   const p=db.policies.find(x=>x.id===id);if(!p)return;
   const overdue=p.nextReview&&new Date(p.nextReview)<new Date();
   const cls={'Active':'bg','Under Review':'by','Outdated':'br','Retired':'bb'};
   const linkedInc=db.incidents.filter(i=>(i.linkedPolicies||[]).includes(id));
-  const incBadge=linkedInc.length?`<span class="badge br" style="font-size:10.5px;">⚠️ ${linkedInc.length} linked incident${linkedInc.length>1?'s':''}</span>`:'';
+  const linkedFmea=db.fmea.filter(f=>(f.linkedPolicies||[]).includes(id));
+  const incBadge=linkedInc.length?`<span class="badge br" style="font-size:10.5px;">⚠️ ${linkedInc.length} incident${linkedInc.length>1?'s':''}</span>`:'';
+  const fmeaBadge=linkedFmea.length?`<span class="badge by" style="font-size:10.5px;">⚠️ ${linkedFmea.length} FMEA finding${linkedFmea.length>1?'s':''}</span>`:'';
   document.getElementById('pp-main').innerHTML=`
     <div class="card">
       <div class="card-hd">
-        <div><h3 class="card-title">${p.name} ${incBadge}</h3>
+        <div><h3 class="card-title">${p.name} ${incBadge} ${fmeaBadge}</h3>
           <div class="card-sub">${p.dept||''} · ${p.version||''}</div></div>
         <button class="btn-del" onclick="deletePolicy('${p.id}')">🗑 Remove</button>
       </div>
       ${linkedInc.length?`<div style="background:#fef2f2;border:1px solid #fca5a5;border-radius:7px;padding:10px 14px;margin-bottom:14px;">
-        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#991b1b;letter-spacing:.5px;margin-bottom:6px;">📋 Incidents Flagging This Policy for Review</div>
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#991b1b;letter-spacing:.5px;margin-bottom:6px;">🔍 Incidents Flagging This Policy for Review (${linkedInc.length})</div>
         ${linkedInc.map(i=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
           <span style="font-size:10.5px;font-weight:700;color:#991b1b;">${i.id}</span>
           <span style="font-size:11.5px;">${(i.what||'').substring(0,70)}…</span>
-          <button class="btn-link" onclick="viewIncident('${i.id}')" style="font-size:10.5px;flex-shrink:0;">→ Open</button>
+          <button class="btn-link" onclick="showTab('ils');setTimeout(()=>viewIncident('${i.id}'),80)" style="font-size:10.5px;flex-shrink:0;">→ Open</button>
+        </div>`).join('')}
+      </div>`:''}
+      ${linkedFmea.length?`<div style="background:#fefce8;border:1px solid #fde047;border-radius:7px;padding:10px 14px;margin-bottom:14px;">
+        <div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#854d0e;letter-spacing:.5px;margin-bottom:6px;">⚠️ FMEA / STPA Projects Flagging This Policy for Review (${linkedFmea.length})</div>
+        ${linkedFmea.map(f=>`<div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
+          <span style="font-size:10.5px;font-weight:700;color:#854d0e;">${f.isSTPA?'STPA':'FMEA'}</span>
+          <span style="font-size:11.5px;">${f.name.substring(0,60)}</span>
+          <button class="btn-link" onclick="showTab('fmea');setTimeout(()=>openFmeaProject('${f.id}'),80)" style="font-size:10.5px;flex-shrink:0;">→ Open ${f.isSTPA?'STPA':'FMEA'}</button>
         </div>`).join('')}
       </div>`:''}
       <div class="info-grid">
@@ -2662,6 +2840,52 @@ function savePolicy(){
 /* ═══════════════════════════════════════════════════════
    P&P LINKAGE — ILS ↔ Policy directory
 ═══════════════════════════════════════════════════════ */
+function populateFmeaPPLinkChecks(fmeaId, selected){
+  const wrap=document.getElementById('fmea-pp-link-checks');
+  const btns=document.getElementById('fmea-pp-link-buttons');
+  if(!wrap)return;
+  if(!db.policies.length){
+    wrap.innerHTML='<span style="font-size:11px;color:var(--muted);">No policies yet — add them in P&P Audit first.</span>';
+    return;
+  }
+  wrap.innerHTML=db.policies.map(p=>{
+    const checked=(selected||[]).includes(p.id);
+    const overdue=p.nextReview&&new Date(p.nextReview)<new Date();
+    return `<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;margin-bottom:4px;">
+      <input type="checkbox" value="${p.id}" ${checked?'checked':''}
+        style="width:14px;height:14px;cursor:pointer;"
+        onchange="renderFmeaPPLinkButtons('${fmeaId}')">
+      <span>📄 ${p.name}</span>
+      ${overdue?'<span class="badge br" style="font-size:9px;">⚠️ Overdue</span>':''}
+      <span style="font-size:10.5px;color:var(--muted);">${p.status||''}</span>
+    </label>`;
+  }).join('');
+  renderFmeaPPLinkButtons(fmeaId);
+}
+function renderFmeaPPLinkButtons(fmeaId){
+  const wrap=document.getElementById('fmea-pp-link-checks');
+  const btns=document.getElementById('fmea-pp-link-buttons');
+  if(!wrap||!btns)return;
+  const ids=[...wrap.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
+  btns.innerHTML=ids.map(id=>{
+    const p=db.policies.find(x=>x.id===id);if(!p)return'';
+    return `<button class="btn-xs" onclick="jumpToPolicy('${id}')"
+      style="font-size:10.5px;background:#f0fdfa;color:#0f766e;border-color:#99f6e4;">
+      → Open: ${p.name.length>30?p.name.slice(0,30)+'…':p.name}</button>`;
+  }).join('');
+}
+function getFmeaLinkedPolicies(){
+  const wrap=document.getElementById('fmea-pp-link-checks');
+  if(!wrap)return[];
+  return [...wrap.querySelectorAll('input[type=checkbox]:checked')].map(c=>c.value);
+}
+function saveFmeaPPLinks(fmeaId){
+  const p=db.fmea.find(x=>x.id===fmeaId);if(!p)return;
+  p.linkedPolicies=getFmeaLinkedPolicies();
+  saveDB();
+  alert('✅ Policy links saved for '+p.name+'.\nView linked FMEA findings in the P&P Audit tab for each flagged policy.');
+}
+
 function populatePPLinkChecks(selected){
   const wrap=document.getElementById('pp-link-checks');
   const btns=document.getElementById('pp-link-buttons');
