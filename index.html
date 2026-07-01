@@ -32,6 +32,7 @@ body{font-family:var(--font);margin:0;background:var(--bg);color:var(--text);
 .btn-load:hover{background:var(--blue-lt);}
 .btn-fresh{background:var(--navy);color:#fff;border:2px solid var(--navy);}
 .btn-fresh:hover{background:var(--navy-md);}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(93,173,226,.5);}50%{box-shadow:0 0 0 8px rgba(93,173,226,0);}}
 .sync-note{font-size:11px;color:#bbb;margin-top:20px;}
 
 /* NAV */
@@ -334,13 +335,14 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
   <div class="sync-box">
     <div class="sync-logo">🛡️</div>
     <h2>SAFETY <span>OS</span></h2>
-    <p>TG-100 Practical Guide — Demo Edition<br>
-       Map · Assess Risk · Learn from Every Incident.</p>
+    <p style="font-size:14px;font-weight:600;color:#1e3a5f;margin-bottom:4px;">Click a button below to begin</p>
+    <p>An open-source safety and quality management learning platform for radiation oncology.</p>
     <div class="sync-btns">
       <button class="btn-load" onclick="triggerCSVLoad()">📂 Load CSV Backup</button>
-      <button class="btn-fresh" onclick="startFresh()">✨ Start Fresh</button>
+      <button class="btn-fresh" onclick="startFresh()" style="animation:pulse 1.8s infinite;">✨ Start Fresh</button>
     </div>
-    <p class="sync-note">Data stored in browser. Export CSV to persist or share.</p>
+    <p class="sync-note">First time? Click <strong>Start Fresh</strong> to load demo data and literature examples.<br>
+    Returning user? Click <strong>Load CSV Backup</strong> to restore your saved data.</p>
   </div>
 </div>
 <input type="file" id="csv-file-in" accept=".csv" onchange="parseCSVFile(event)">
@@ -465,6 +467,10 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
       </div>
       <!-- Causality Distribution Chart -->
       <div class="cause-dist" id="cause-dist-panel"></div>
+      <div style="padding:8px 14px;background:#f5f0ff;border-bottom:1px solid #e9d5ff;font-size:10.5px;color:#6b21a8;">
+        📄 <strong>Literature examples</strong> not loaded?
+        <button class="btn-link" onclick="loadLiteratureExamples()" style="color:#6b21a8;font-size:10.5px;margin-left:4px;">Load now →</button>
+      </div>
       <div class="split-side-list" id="ils-list">
         <div class="empty-st"><div class="empty-st-icon">📭</div>No incidents logged</div>
       </div>
@@ -667,9 +673,9 @@ hr.divider{border:none;border-top:1px solid var(--border);margin:16px 0;}
         <button onclick="loadTG100Templates()">Load Templates</button>
       </div>
       <div class="insight" style="background:linear-gradient(135deg,#4c1d95,#7c3aed);">
-        <div><h4>📄 Literature Examples</h4>
-          <p>3 paper incidents (Wong &amp; Pawlicki 2025 · Silvis-Cividjian 2020) + Equipment Implementation FMEA (Pawlicki 2019). Pre-loaded on fresh start — use this if loading from CSV backup.</p></div>
-        <button onclick="loadLiteratureExamples()">Reload</button>
+        <div><h4>📄 Load Literature Examples</h4>
+          <p>3 paper incidents · 3 literature FMEAs · 2 STPA projects — from Pawlicki 2019, Silvis-Cividjian 2020, Manger 2015, Nealon 2022, Wong &amp; Pawlicki 2025. Safe to click anytime — skips already-loaded items.</p></div>
+        <button onclick="loadLiteratureExamples()">Load / Reload</button>
       </div>
       <div class="empty-st" style="padding-top:40px;">
         <div class="empty-st-icon">⚠️</div>
@@ -1981,7 +1987,8 @@ function viewIncident(id){
   ['constraint','rtt_c','rtt_m','rtt_x','phys_c','phys_m','phys_x',
    'dosi_c','dosi_m','dosi_x','mgmt_c','mgmt_m','mgmt_x',
    'equip_c','equip_m','equip_x','systemic','intervention'].forEach(k=>{
-    const el=document.getElementById('cast-'+k);if(el)el.value=cast[k]||'';
+    const elId='cast-'+k.replace(/_/g,'-');
+    const el=document.getElementById(elId);if(el)el.value=cast[k]||'';
   });
   // Now check whether to show CAST panel (reads the just-populated fields)
   onSeverityChange();
@@ -2026,7 +2033,7 @@ function getCastData(){
     'dosi_c','dosi_m','dosi_x','mgmt_c','mgmt_m','mgmt_x',
     'equip_c','equip_m','equip_x','systemic','intervention'];
   const obj={};
-  keys.forEach(k=>{const el=document.getElementById('cast-'+k);if(el)obj[k]=el.value;});
+  keys.forEach(k=>{const el=document.getElementById('cast-'+k.replace(/_/g,'-'));if(el)obj[k]=el.value;});
   return obj;
 }
 function saveIncident(){
