@@ -1055,10 +1055,10 @@ const BUILTIN_MAP={
     {id:'B04',col:2,lane:'Dosimetrist',label:'Image Import\n& Setup',tg100Key:'sim',
      desc:'DICOM transfer to TPS; verify patient demographics and image integrity; create initial structure set.',
      stpa:'Dosimetrist controls TPS data integrity. UCA: images imported for wrong patient; transfer failure not detected; structure set created without confirming image completeness.'},
-    {id:'B05',col:3,lane:'Physician',label:'Target\nContouring',tg100Key:'contour',
+    {id:'B05',col:3,lane:'Physician',label:'Target\nContouring',tg100Key:'planning',
      desc:'Physician delineates GTV and CTV; may use image fusion. Documents margin rationale for PTV expansion.',
      stpa:'Oncologist controls target definition — the highest-consequence control action in the workflow. UCAs: contour drawn on wrong CT series; OAR proximity not considered; prescription margins applied inconsistently.'},
-    {id:'B06',col:3,lane:'Dosimetrist',label:'OAR\nContouring',tg100Key:'contour',
+    {id:'B06',col:3,lane:'Dosimetrist',label:'OAR\nContouring',tg100Key:'planning',
      desc:'Dosimetrist contours organs-at-risk; atlas or AI-based segmentation may assist. Physician reviews and approves.',
      stpa:'Dosimetrist controls OAR definition; physician provides oversight feedback. UCAs: OAR contour started before target approved; auto-segmentation accepted without review (over-reliance on AI — a key FMEA failure mode).'},
     {id:'B07',col:4,lane:'Dosimetrist',label:'Treatment\nPlanning',tg100Key:'planning',
@@ -1151,13 +1151,33 @@ function importCSV(text){
     hdrs.forEach((h,i)=>obj[h]=vals[i]||'');
     if((sec==='fmea'||sec==='processMaps')&&obj.json){
       try{const parsed=JSON.parse(obj.json);Object.assign(obj,parsed);}catch{}delete obj.json;}
+    if(sec==='incidents'){
+      // Restore pipe-delimited arrays
+      obj.causality=obj.causality?obj.causality.split('|').filter(Boolean):[];
+      obj.linkedPolicies=obj.linkedPolicies?obj.linkedPolicies.split('|').filter(Boolean):[];
+      // Restore cast object from cast_json
+      if(obj.cast_json){try{obj.cast=JSON.parse(obj.cast_json);}catch{obj.cast={};}delete obj.cast_json;}
+      else obj.cast=obj.cast||{};
+      // Restore eventType (backward compat for older CSVs without eventType column)
+      if(!obj.eventType){
+        if(obj.severity==='Near Miss')obj.eventType='near_miss';
+        else if(obj.severity)obj.eventType='incident';
+      }
+    }
     if(res[sec])res[sec].push(obj);
   }
   return res;
 }
 function csvLine(line){
-  const res=[];let cur='',q=false;
-  for(const c of line){if(c==='"')q=!q;else if(c===','&&!q){res.push(cur);cur='';}else cur+=c;}
+  const res=[];let cur='',inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){
+      if(inQ&&line[i+1]==='"'){cur+='"';i++;}  // unescape "" → "
+      else inQ=!inQ;
+    } else if(c===','&&!inQ){res.push(cur);cur='';}
+    else cur+=c;
+  }
   res.push(cur);return res;
 }
 function exportCSV(){
@@ -1165,9 +1185,9 @@ function exportCSV(){
   const sec=(name,rows,hdrs,fn)=>{out+=`##SECTION:${name}\n${hdrs.join(',')}\n`;rows.forEach(r=>out+=fn(r)+'\n');out+='\n';};
   sec('incidents',db.incidents,
     ['id','when','where','who','what','why','w1','w2','w3','w4','w5','rootCause','action','severity',
-     'status','stepLink','causality','linkedPolicies','cast_json','timestamp'],
+     'eventType','status','stepLink','causality','linkedPolicies','cast_json','timestamp'],
     r=>[r.id,q(r.when),q(r.where),q(r.who),q(r.what),q(r.why),q(r.w1),q(r.w2),q(r.w3),q(r.w4),
-        q(r.w5),q(r.rootCause),q(r.action),q(r.severity),q(r.status),q(r.stepLink||''),
+        q(r.w5),q(r.rootCause),q(r.action),q(r.severity),q(r.eventType||''),q(r.status),q(r.stepLink||''),
         q((r.causality||[]).join('|')),q((r.linkedPolicies||[]).join('|')),
         q(JSON.stringify(r.cast||{})),q(r.timestamp)].join(','));
   sec('fmea',db.fmea,['id','json'],r=>[r.id,q(JSON.stringify(r))].join(','));
